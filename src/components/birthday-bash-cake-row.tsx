@@ -44,15 +44,17 @@ export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
   const keepSquareImage = cake.slug === "blue-purple-character-bash";
 
   return (
-    <article className="grid items-stretch gap-6 border-b border-border pb-10 last:border-b-0 sm:grid-cols-2 sm:gap-10">
+    <article className="grid grid-cols-1 items-stretch gap-6 border-b border-border pb-10 last:border-b-0 sm:grid-cols-2 sm:gap-10">
       <div
-        className={`relative aspect-square overflow-hidden rounded-lg bg-muted ${keepSquareImage ? "" : "sm:aspect-auto sm:h-full"}`}
+        className={`relative overflow-hidden rounded-lg bg-muted ${keepSquareImage ? "" : "sm:h-full"}`}
       >
         <img
           src={cake.image}
           alt={cake.name}
           onError={onProductImageError}
-          className={keepSquareImage ? "h-full w-full object-contain" : "absolute inset-0 h-full w-full object-contain"}
+          // In-flow square on phones (iOS Safari collapses an aspect-ratio box that only
+          // holds an absolutely positioned image); stretched to the text column on wider screens.
+          className={`block aspect-square w-full object-contain ${keepSquareImage ? "" : "sm:absolute sm:inset-0 sm:aspect-auto sm:h-full"}`}
         />
         {cake.badge && (
           <span className="absolute left-3 top-3 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-bold uppercase text-secondary-foreground">

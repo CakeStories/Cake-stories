@@ -72,12 +72,13 @@ function BirthdayCakePage() {
         </nav>
 
         <div className="grid grid-cols-1 items-stretch gap-8 border-b border-border pb-10 sm:grid-cols-2">
-          <div className="relative aspect-square overflow-hidden rounded-lg bg-muted sm:aspect-auto sm:h-full">
+          {/* A plain in-flow square image: iOS Safari collapsed the old aspect-ratio box (holding only an absolutely positioned image) to 0x0. */}
+          <div className="overflow-hidden rounded-lg bg-muted sm:sticky sm:top-24 sm:self-start">
             <img
               src={cake.image}
               alt={cake.name}
               onError={onProductImageError}
-              className="absolute inset-0 h-full w-full object-cover sm:object-contain"
+              className="block aspect-square w-full object-cover sm:object-contain"
             />
           </div>
 
