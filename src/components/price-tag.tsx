@@ -22,6 +22,9 @@ export function PriceTag({
   const pct = discountPercent(price, mrp);
   const classes = SIZE_CLASSES[size];
 
+  // A ₹0 price means the shop quotes it on request (via WhatsApp).
+  if (price <= 0) return <strong className={classes.price}>Price on request</strong>;
+
   return (
     <span className="inline-flex flex-wrap items-baseline gap-1.5">
       <strong className={classes.price}>₹{price}</strong>

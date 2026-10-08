@@ -4,6 +4,7 @@ import {
   ChevronDown,
   Clock3,
   Heart,
+  MessageCircle,
   Minus,
   Plus,
   ShieldCheck,
@@ -17,6 +18,7 @@ import { useWishlist } from "@/lib/wishlist";
 import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { CAKE_MESSAGE_MAX, INSTRUCTIONS_MAX, type CartItemRef } from "@/lib/pricing";
 import type { PartyEssentialItem } from "@/lib/party-essentials";
+import { cakeEnquiryLink } from "@/lib/whatsapp";
 
 export function CakePurchasePanel({
   slug,
@@ -87,6 +89,9 @@ export function CakePurchasePanel({
     ? withSitewideDiscount(rawVariant.price, rawVariant.mrp, settings)
     : undefined;
   const price = effective?.price;
+  // A ₹0 price in /manage means "price on request": the customer enquires on
+  // WhatsApp instead of checking out (the server also refuses to sell it).
+  const priceOnRequest = rawVariant !== undefined && rawVariant.price <= 0;
 
   const variantLabel = useMemo(() => {
     if (flavours.length > 0) return `${size} · ${flavourLabel(flavour ?? "")}`;
@@ -94,7 +99,7 @@ export function CakePurchasePanel({
   }, [flavours.length, size, flavour]);
 
   const buildLine = () => {
-    if (price === undefined || !rawVariant) return null;
+    if (price === undefined || !rawVariant || priceOnRequest) return null;
     const trimmedNote = note.trim();
     const trimmedInstructions = specialInstructions.trim();
     return {
@@ -182,7 +187,7 @@ export function CakePurchasePanel({
           </span>
         )
       )}
-      <h1 className="font-display text-3xl sm:text-4xl">{title}</h1>
+      <h1 className="break-words font-display text-3xl sm:text-4xl">{title}</h1>
 
       <div className="mt-3">
         {price !== undefined ? (
@@ -276,6 +281,8 @@ export function CakePurchasePanel({
         <Truck size={14} className="text-primary" /> Free delivery above ₹999
       </div>
 
+      {!priceOnRequest && (
+      <>
       <label className="mt-6 block text-sm">
         <span className="mb-1 block font-medium text-foreground">
           Message on the cake (optional)
@@ -369,8 +376,21 @@ export function CakePurchasePanel({
           </div>
         </div>
       )}
+      </>
+      )}
 
       <div className="mt-7 flex flex-wrap items-center gap-3">
+        {priceOnRequest ? (
+          <a
+            href={cakeEnquiryLink(title, flavours.length > 0 ? flavourLabel(flavour ?? "") : undefined, size || undefined)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-[#25D366] px-6 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02] sm:flex-none"
+          >
+            <MessageCircle size={17} /> Enquire on WhatsApp
+          </a>
+        ) : (
+        <>
         <div className="flex items-center rounded-md border border-input">
           <button
             type="button"
@@ -390,29 +410,34 @@ export function CakePurchasePanel({
             <Plus size={15} />
           </button>
         </div>
-        <Button
-          size="lg"
-          className="flex-1 sm:flex-none"
-          onClick={handleAdd}
-          disabled={price === undefined || outOfStock}
-        >
-          {added ? "Added!" : "Add to Cart"}
-        </Button>
-        <Button
-          size="lg"
-          variant="hero"
-          className="flex-1 sm:flex-none"
-          onClick={handleBuyNow}
-          disabled={price === undefined || outOfStock}
-        >
-          Buy Now
-        </Button>
+        {/* On phones: quantity + wishlist on one row, full-width buttons below. */}
+        <div className="order-last flex w-full gap-3 sm:order-none sm:w-auto">
+          <Button
+            size="lg"
+            className="flex-1 whitespace-nowrap sm:flex-none"
+            onClick={handleAdd}
+            disabled={price === undefined || outOfStock}
+          >
+            {added ? "Added!" : "Add to Cart"}
+          </Button>
+          <Button
+            size="lg"
+            variant="hero"
+            className="flex-1 whitespace-nowrap sm:flex-none"
+            onClick={handleBuyNow}
+            disabled={price === undefined || outOfStock}
+          >
+            Buy Now
+          </Button>
+        </div>
+        </>
+        )}
         <button
           type="button"
           onClick={toggleWishlist}
           aria-pressed={inWishlist}
           aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
-          className={`grid size-11 shrink-0 place-items-center rounded-md border border-input transition-colors hover:bg-muted ${inWishlist ? "border-primary text-primary" : "text-foreground/70"}`}
+          className={`ml-auto grid size-11 shrink-0 place-items-center rounded-md border border-input transition-colors hover:bg-muted sm:ml-0 ${inWishlist ? "border-primary text-primary" : "text-foreground/70"}`}
         >
           <Heart size={18} className={inWishlist ? "fill-primary" : ""} />
         </button>

@@ -175,7 +175,8 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
     }
     if (ref.type === "variant") {
       const variant = variantById.get(ref.variantId);
-      if (!variant?.active || !variant.products?.active) return null;
+      // A ₹0 price means "price on request" — never sellable through checkout.
+      if (!variant?.active || !variant.products?.active || !(Number(variant.price) > 0)) return null;
       return {
         unitPrice: applySitewideDiscount(Number(variant.price), percent),
         name: variant.products.name,
@@ -185,7 +186,7 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
       };
     }
     const addon = addonById.get(ref.addonId);
-    if (!addon?.active) return null;
+    if (!addon?.active || !(Number(addon.price) > 0)) return null;
     return {
       unitPrice: Number(addon.price),
       name: addon.name,

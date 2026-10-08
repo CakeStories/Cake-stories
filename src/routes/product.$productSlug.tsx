@@ -113,13 +113,13 @@ function ProductPage() {
           <span className="text-foreground">{title}</span>
         </nav>
 
-        <div className="grid items-stretch gap-8 border-b border-border pb-10 sm:grid-cols-2">
+        <div className="grid grid-cols-1 items-stretch gap-8 border-b border-border pb-10 sm:grid-cols-2">
           <div className="relative aspect-square overflow-hidden rounded-lg bg-muted sm:aspect-auto sm:h-full">
             <img
               src={image}
               alt={title}
               onError={onProductImageError}
-              className={`absolute inset-0 h-full w-full ${categorySlug === "birthday-bash" ? "object-cover" : "object-contain"}`}
+              className={`absolute inset-0 h-full w-full ${categorySlug === "birthday-bash" ? "object-cover" : "object-cover sm:object-contain"}`}
               width={816}
               height={816}
             />
