@@ -14,7 +14,34 @@ export function getSupabaseConfig() {
     );
   }
 
-  return { url: SUPABASE_URL.replace(/\/$/, ""), key: SUPABASE_ANON_KEY };
+  const directUrl = SUPABASE_URL.replace(/\/$/, "");
+  // In the browser, go through our own domain's /sb proxy (see vite.config.ts):
+  // Indian ISPs block *.supabase.co, so direct requests from phones there fail.
+  const url = typeof window === "undefined" ? directUrl : `${window.location.origin}/sb`;
+  return { url, directUrl, key: SUPABASE_ANON_KEY };
+}
+
+const SUPABASE_STORAGE_PREFIX = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\//;
+
+/**
+ * Rewrites a Supabase Storage URL (as saved in the database) to go through
+ * the /sb proxy on our own domain, so images load where supabase.co is
+ * blocked. Anything else is returned unchanged.
+ */
+export function proxiedImageUrl(url: string): string {
+  return url.replace(SUPABASE_STORAGE_PREFIX, "/sb/storage/");
+}
+
+/** Applies proxiedImageUrl to every string in fetched rows, including nested ones. */
+function proxyStorageUrls<T>(value: T): T {
+  if (typeof value === "string") return proxiedImageUrl(value) as T;
+  if (Array.isArray(value)) return value.map(proxyStorageUrls) as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, proxyStorageUrls(v)]),
+    ) as T;
+  }
+  return value;
 }
 
 type QueryOptions = {
@@ -60,7 +87,7 @@ async function fetchAllPages<T>(url: string, headers: Record<string, string>): P
       throw new Error(`Supabase request failed (${response.status}): ${body}`);
     }
 
-    const page = (await response.json()) as T[];
+    const page = proxyStorageUrls((await response.json()) as T[]);
     results.push(...page);
 
     if (page.length < PAGE_SIZE) break;

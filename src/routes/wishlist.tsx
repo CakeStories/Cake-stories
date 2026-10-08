@@ -6,6 +6,7 @@ import { Button } from "@/components/button";
 import { PriceTag } from "@/components/price-tag";
 import { useWishlist } from "@/lib/wishlist";
 import { DEFAULT_PRODUCT_IMAGE, onProductImageError } from "@/lib/image-fallback";
+import { proxiedImageUrl } from "@/lib/supabase";
 
 export const Route = createFileRoute("/wishlist")({
   head: () => ({ meta: [{ title: "Your Wishlist | Cake Stories" }, { name: "robots", content: "noindex" }] }),
@@ -39,7 +40,7 @@ function WishlistPage() {
               <li key={item.id} className="overflow-hidden rounded-md border border-border bg-card">
                 <Link to={item.href} className="block aspect-square overflow-hidden bg-muted">
                   <img
-                    src={item.image || DEFAULT_PRODUCT_IMAGE}
+                    src={proxiedImageUrl(item.image || DEFAULT_PRODUCT_IMAGE)}
                     alt={item.name}
                     onError={onProductImageError}
                     className="h-full w-full object-cover"

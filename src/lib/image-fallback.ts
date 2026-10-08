@@ -7,7 +7,7 @@ import type { SyntheticEvent } from "react";
  * back to this instead of an empty string.
  */
 export const DEFAULT_PRODUCT_IMAGE =
-  "https://nyigmtugjsktzkietgbc.supabase.co/storage/v1/object/public/product-images/kids/_photo-coming-soon.webp";
+  "/sb/storage/v1/object/public/product-images/kids/_photo-coming-soon.webp"; // via our /sb proxy
 
 /**
  * `<img onError={onProductImageError}>` — if the stored URL 404s or otherwise
@@ -17,6 +17,7 @@ export const DEFAULT_PRODUCT_IMAGE =
  */
 export function onProductImageError(event: SyntheticEvent<HTMLImageElement>) {
   const img = event.currentTarget;
-  if (img.src === DEFAULT_PRODUCT_IMAGE) return;
+  // getAttribute, not .src — .src is the resolved absolute URL, which never equals the relative path.
+  if (img.getAttribute("src") === DEFAULT_PRODUCT_IMAGE) return;
   img.src = DEFAULT_PRODUCT_IMAGE;
 }

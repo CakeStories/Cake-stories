@@ -44,7 +44,7 @@ export const Route = createFileRoute("/")({
 
 // Flavour thumbnails are stored in Supabase Storage under
 // product-images/flavour-thumbnails.
-const SUPABASE_STORAGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images`;
+const SUPABASE_STORAGE_BASE = "/sb/storage/v1/object/public/product-images"; // via our /sb proxy — see vite.config.ts
 
 // Supports the common ways the PNGs may have been uploaded to Supabase:
 // inside flavour-thumbnails/, directly in product-images/, or using the
@@ -96,7 +96,7 @@ const CHARACTER_CAKES_CATEGORY_ID = "6ff19f6d-9551-4830-a306-206b80a3d5f9";
 
 // "Cakes for every celebration" occasion rail — each card's own photo, from
 // Supabase Storage, matching the occasion.
-const CELEBRATION_IMAGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images`;
+const CELEBRATION_IMAGE_BASE = "/sb/storage/v1/object/public/product-images"; // via our /sb proxy — see vite.config.ts
 const celebrations: { label: string; category: string; image: string }[] = [
   {
     label: "First Birthday",

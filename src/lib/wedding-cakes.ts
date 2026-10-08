@@ -5,7 +5,7 @@ export { flavourLabel } from "@/lib/flavours";
 export const WEDDING_CAKES_CATEGORY_ID = "c0c23f7c-c460-41f1-844e-b78a918f2059";
 
 const STORAGE_BASE =
-  "https://nyigmtugjsktzkietgbc.supabase.co/storage/v1/object/public/product-images";
+  "/sb/storage/v1/object/public/product-images"; // via our /sb proxy — see vite.config.ts
 
 export type WeddingCakeVariant = {
   id: string;

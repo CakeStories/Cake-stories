@@ -301,7 +301,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = (redirectPath?: string) => {
-    const { url, key } = getSupabaseConfig();
+    // A full-page OAuth redirect: Google returns to Supabase's own callback
+    // URL, so this uses the direct project URL rather than the /sb proxy.
+    const { directUrl: url, key } = getSupabaseConfig();
     // `redirect_to` has to exactly match an entry in Supabase's Auth →
     // URL Configuration → Redirect URLs allow-list, or Supabase silently
     // drops back to its default Site URL without the tokens — which looks

@@ -6,6 +6,7 @@ import { Button } from "@/components/button";
 import { useCart, type CartLine } from "@/lib/cart";
 import { FREE_DELIVERY_THRESHOLD, deliveryFeeFor } from "@/lib/pricing";
 import { DEFAULT_PRODUCT_IMAGE, onProductImageError } from "@/lib/image-fallback";
+import { proxiedImageUrl } from "@/lib/supabase";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({ meta: [{ title: "Your Cart | Cake Stories" }, { name: "robots", content: "noindex" }] }),
@@ -62,7 +63,7 @@ function CartPage() {
                     className="block size-24 shrink-0 overflow-hidden rounded-md bg-muted"
                   >
                     <img
-                      src={item.image || DEFAULT_PRODUCT_IMAGE}
+                      src={proxiedImageUrl(item.image || DEFAULT_PRODUCT_IMAGE)}
                       alt={item.name}
                       onError={onProductImageError}
                       className="h-full w-full object-cover"

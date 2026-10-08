@@ -21,6 +21,7 @@ import {
 import { readSavedDeliveryLocation } from "@/lib/delivery-location";
 import { CheckoutInfoAccordion } from "@/components/checkout-info-accordion";
 import { DEFAULT_PRODUCT_IMAGE, onProductImageError } from "@/lib/image-fallback";
+import { proxiedImageUrl } from "@/lib/supabase";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout | Cake Stories" }, { name: "robots", content: "noindex" }] }),
@@ -643,7 +644,7 @@ function CheckoutPage() {
               {items.map((item) => (
                 <li key={item.id} className="flex items-start gap-3 text-sm">
                   <img
-                    src={item.image || DEFAULT_PRODUCT_IMAGE}
+                    src={proxiedImageUrl(item.image || DEFAULT_PRODUCT_IMAGE)}
                     alt={item.name}
                     onError={onProductImageError}
                     className="size-12 shrink-0 rounded-md object-cover"
