@@ -15,6 +15,7 @@ export function CakeCard({
   meta: _meta,
   fit = "cover",
   outOfStock = false,
+  tabIndex,
 }: {
   href: string;
   image: string;
@@ -41,6 +42,8 @@ export function CakeCard({
    */
   fit?: "cover" | "contain";
   outOfStock?: boolean;
+  /** -1 for repeated copies in a looping rail, so keyboard users skip the duplicates. */
+  tabIndex?: number;
 }) {
   // Show the same sale price the product page and checkout use.
   const settings = useStoreSettings();
@@ -51,7 +54,11 @@ export function CakeCard({
     (isBirthday ? settings.birthdayDeliveryEstimate : settings.defaultDeliveryEstimate);
 
   return (
-    <Link to={href} className="group block overflow-hidden rounded-md border border-border bg-card">
+    <Link
+      to={href}
+      {...(tabIndex !== undefined && { tabIndex })}
+      className="group block overflow-hidden rounded-md border border-border bg-card"
+    >
       <div className="relative aspect-square overflow-hidden bg-muted">
         <img
           src={image}
@@ -60,29 +67,33 @@ export function CakeCard({
           onError={onProductImageError}
           className={`h-full w-full transition duration-500 group-hover:scale-105 ${fit === "contain" ? "object-contain" : "object-cover"} ${outOfStock ? "opacity-60 grayscale" : ""}`}
         />
-        {outOfStock && (
+        {outOfStock ? (
           <span className="absolute left-2 top-2 rounded-full bg-foreground/80 px-2 py-0.5 text-[10px] font-bold uppercase text-background">
             Out of Stock
           </span>
+        ) : (
+          badge && (
+            // "Trending now", "New arrival", … sit on the photo's top-left corner.
+            <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-sm">
+              <Sparkles size={10} />
+              {badge}
+            </span>
+          )
         )}
       </div>
       <div className="p-3">
-        <h3 className="min-h-10 text-sm font-semibold leading-5 group-hover:text-primary">
+        {/* One line; long names end in "…" (full name in the tooltip). */}
+        <h3 className="truncate text-sm font-semibold leading-5 group-hover:text-primary" title={title}>
           {title}
         </h3>
-        {!outOfStock && badge && (
-          <span className="mt-1 inline-flex animate-pulse items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-secondary-foreground">
-            <Sparkles size={10} />
-            {badge}
-          </span>
-        )}
-        <p className="mt-1">
+        {/* Price left, delivery time right; the time only drops a line on very narrow cards. */}
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
           <PriceTag price={shown.price} mrp={shown.mrp ?? null} size="sm" />
-        </p>
-        <p className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-success">
-          <Clock3 size={12} />
-          {deliveryEstimate}
-        </p>
+          <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-success">
+            <Clock3 size={12} />
+            {deliveryEstimate}
+          </span>
+        </div>
       </div>
     </Link>
   );

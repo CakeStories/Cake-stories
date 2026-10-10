@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { LoopingRail } from "@/components/looping-rail";
 import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { onProductImageError } from "@/lib/image-fallback";
 
@@ -39,7 +39,7 @@ function discountLabel(price: number, mrp?: number | null): string | null {
   return `${Number(pct.toFixed(1))}%`;
 }
 
-function RailCard({ cake }: { cake: TabbedCake }) {
+function RailCard({ cake, duplicate = false }: { cake: TabbedCake; duplicate?: boolean }) {
   const settings = useStoreSettings();
   const shown = withSitewideDiscount(cake.minPrice, cake.minPriceMrp, settings);
   const off = discountLabel(shown.price, shown.mrp);
@@ -47,7 +47,8 @@ function RailCard({ cake }: { cake: TabbedCake }) {
   return (
     <Link
       to={cake.href}
-      className="group block w-[170px] shrink-0 snap-start overflow-hidden rounded-xl border border-border/70 bg-background shadow-sm transition hover:shadow-md sm:w-[200px] lg:w-[218px]"
+      {...(duplicate && { tabIndex: -1 })}
+      className="group block w-[170px] overflow-hidden rounded-xl border border-border/70 bg-background shadow-sm transition hover:shadow-md sm:w-[200px] lg:w-[218px]"
     >
       <div className="relative aspect-square overflow-hidden bg-muted">
         <img
@@ -73,8 +74,10 @@ function RailCard({ cake }: { cake: TabbedCake }) {
       <div className="px-3 pb-3 pt-2.5">
         <p className="truncate text-[13px] font-medium text-foreground">{cake.title}</p>
         <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-sm">
-          <strong className="text-[15px] font-bold">₹{shown.price}</strong>
-          {off && (
+          <strong className="text-[15px] font-bold">
+            {shown.price > 0 ? `₹${shown.price}` : "Price on request"}
+          </strong>
+          {off && shown.price > 0 && (
             <>
               <span className="text-[11px] text-muted-foreground line-through">₹{shown.mrp}</span>
               <span className="text-[11px] font-semibold text-success">{off}OFF</span>
@@ -97,16 +100,19 @@ function RailCard({ cake }: { cake: TabbedCake }) {
 export function CakeTabsRail({
   cakes,
   tabOrder,
+  ariaLabel = "Shop by flavour",
+  icon = tabIcon,
 }: {
   /** Kept for call-site compatibility; the reference design shows no heading. */
   title?: string;
   cakes: TabbedCake[];
   tabOrder: string[];
+  /** Accessible name for the section, e.g. "Shop by character". */
+  ariaLabel?: string;
+  /** Emoji shown beside each tab name; defaults to one picked from flavour words. */
+  icon?: (tabLabel: string) => string;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
 
   const groups = useMemo<Group[]>(() => {
     const byLabel = new Map<string, TabbedCake[]>();
@@ -140,32 +146,10 @@ export function CakeTabsRail({
 
   const activeGroup = groups.find((g) => g.label === activeTab) ?? groups[0];
 
-  const updateArrows = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 4);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  }, []);
-
-  // Back to the start (and re-measure) whenever the visible tab changes.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTo({ left: 0 });
-    updateArrows();
-    window.addEventListener("resize", updateArrows);
-    return () => window.removeEventListener("resize", updateArrows);
-  }, [activeGroup?.label, updateArrows]);
-
   if (groups.length === 0 || !activeGroup) return null;
 
-  const scrollBy = (direction: -1 | 1) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: "smooth" });
-  };
-
   return (
-    <section className="mt-6" aria-label="Shop by flavour">
+    <section className="mt-6" aria-label={ariaLabel}>
       <div role="tablist" className="scrollbar-none flex overflow-x-auto">
         {groups.map((group) => {
           const active = group.label === activeGroup.label;
@@ -183,7 +167,7 @@ export function CakeTabsRail({
               }`}
             >
               <span aria-hidden="true" className="text-xl leading-none">
-                {tabIcon(group.label)}
+                {icon(group.label)}
               </span>
               <span aria-hidden="true" className="h-5 w-px bg-border" />
               {group.label}
@@ -192,37 +176,16 @@ export function CakeTabsRail({
         })}
       </div>
 
-      <div className="relative bg-primary/[0.07] px-3 py-5 sm:px-4">
-        <div
-          ref={scrollRef}
-          onScroll={updateArrows}
-          className="scrollbar-none flex snap-x gap-3 overflow-x-auto pb-1 sm:gap-4"
-        >
-          {activeGroup.cakes.map((cake) => (
-            <RailCard key={cake.id} cake={cake} />
-          ))}
-        </div>
-
-        {canLeft && (
-          <button
-            type="button"
-            aria-label="Previous cakes"
-            onClick={() => scrollBy(-1)}
-            className="absolute left-2 top-[38%] z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background shadow-md transition hover:bg-muted"
-          >
-            <ChevronLeft size={20} />
-          </button>
-        )}
-        {canRight && (
-          <button
-            type="button"
-            aria-label="Next cakes"
-            onClick={() => scrollBy(1)}
-            className="absolute right-2 top-[38%] z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background shadow-md transition hover:bg-muted"
-          >
-            <ChevronRight size={20} />
-          </button>
-        )}
+      <div className="bg-primary/[0.07] px-3 py-5 sm:px-4">
+        <LoopingRail
+          items={activeGroup.cakes}
+          getKey={(cake) => cake.id}
+          resetKey={activeGroup.label}
+          trackClassName="gap-3 pb-1 sm:gap-4"
+          previousLabel="Previous cakes"
+          nextLabel="Next cakes"
+          renderItem={(cake, duplicate) => <RailCard cake={cake} duplicate={duplicate} />}
+        />
       </div>
     </section>
   );

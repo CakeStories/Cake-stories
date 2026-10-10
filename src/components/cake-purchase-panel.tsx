@@ -324,9 +324,9 @@ export function CakePurchasePanel({
               return (
                 <div
                   key={item.id}
-                  className="block w-24 shrink-0 rounded-md border border-border bg-card p-1.5"
+                  className="flex w-24 shrink-0 flex-col rounded-md border border-border bg-card p-1.5"
                 >
-                  <Link to="/product/$productSlug" params={{ productSlug: item.slug }}>
+                  <Link to="/product/$productSlug" params={{ productSlug: item.slug }} className="mb-1.5 block">
                     <div className="aspect-square overflow-hidden rounded bg-muted">
                       <img
                         src={item.image}
@@ -335,7 +335,8 @@ export function CakePurchasePanel({
                         className="h-full w-full object-cover"
                       />
                     </div>
-                    <p className="mt-1 line-clamp-2 text-[11px] font-medium leading-tight text-foreground">
+                    {/* Always two lines tall, so every price and Add button lines up across the row. */}
+                    <p className="mt-1 line-clamp-2 min-h-[2.5em] text-[11px] font-medium leading-tight text-foreground">
                       {item.name}
                     </p>
                     <p className="text-[11px] font-semibold text-primary">₹{item.price}</p>
@@ -344,13 +345,13 @@ export function CakePurchasePanel({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="mt-1.5 h-7 w-full px-0 text-[11px]"
+                      className="mt-auto h-7 w-full px-0 text-[11px]"
                       onClick={() => addPartyEssential(item)}
                     >
                       Add
                     </Button>
                   ) : (
-                    <div className="mt-1.5 flex items-center justify-between rounded-md border border-input">
+                    <div className="mt-auto flex items-center justify-between rounded-md border border-input">
                       <button
                         type="button"
                         aria-label={`Remove one ${item.name}`}

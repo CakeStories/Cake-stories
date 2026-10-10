@@ -5,8 +5,9 @@ import { CakeSlice, ChevronLeft, ChevronRight, ShieldCheck, Star, Truck } from "
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { CakeCard } from "@/components/cake-card";
+import { LoopingRail } from "@/components/looping-rail";
 import { ReviewsSection } from "@/components/reviews-section";
-import { getCharacterCakes } from "@/lib/generic-cakes";
+import { CHARACTER_CAKES_CATEGORY_ID, getCharacterCakes } from "@/lib/generic-cakes";
 import { getBanners } from "@/lib/banners";
 import { flavours } from "@/lib/flavour-list";
 import bannerClassics from "@/assets/cake-stories-classics.jpg";
@@ -92,34 +93,38 @@ function scrollByCards(ref: React.RefObject<HTMLDivElement | null>, direction: -
 // Hidden "Character Cakes" category — these products aren't in the top nav
 // (the category row is inactive), they only power the homepage Character
 // Cake rail, grouped by their character_tag.
-const CHARACTER_CAKES_CATEGORY_ID = "6ff19f6d-9551-4830-a306-206b80a3d5f9";
 
-// "Cakes for every celebration" occasion rail — each card's own photo, from
-// Supabase Storage, matching the occasion.
+// "Cakes for every celebration" banners — each one's own photo, from
+// Supabase Storage, with a short two-line description.
 const CELEBRATION_IMAGE_BASE = "/sb/storage/v1/object/public/product-images"; // via our /sb proxy — see vite.config.ts
-const celebrations: { label: string; category: string; image: string }[] = [
+const celebrations: { label: string; description: string; category: string; image: string }[] = [
   {
     label: "First Birthday",
+    description: "Themed cakes for their very first birthday.",
     category: "kids-cakes",
     image: `${CELEBRATION_IMAGE_BASE}/kids/moonlight-blue-one.webp`,
   },
   {
     label: "Anniversary",
+    description: "Romantic cakes for every year of love.",
     category: "anniversary-cakes",
     image: `${CELEBRATION_IMAGE_BASE}/anniversary/wa001.png`,
   },
   {
     label: "Birthday Bash",
+    description: "Show-stopping cakes for big birthday parties.",
     category: "birthday-bash",
     image: `${CELEBRATION_IMAGE_BASE}/birthday-bash/blue-gold-birthday-celebration.webp`,
   },
   {
     label: "Wedding",
+    description: "Elegant tiered cakes for your big day.",
     category: "wedding-cakes",
     image: `${CELEBRATION_IMAGE_BASE}/wedding-cakes/wed001.webp`,
   },
   {
     label: "Holy Communion",
+    description: "Graceful cakes for a blessed celebration.",
     category: "holy-communion-cakes",
     image: `${CELEBRATION_IMAGE_BASE}/holy-communion/KIDS116-angel-blessing-baptism-cakestories.png`,
   },
@@ -156,7 +161,7 @@ const fallbackBanners: {
 function CakeStore() {
   const { dbBanners } = Route.useLoaderData();
   const flavourScrollRef = useRef<HTMLDivElement>(null);
-  const characterScrollRef = useRef<HTMLDivElement>(null);
+  const celebrationScrollRef = useRef<HTMLDivElement>(null);
   const [bannerIndex, setBannerIndex] = useState(0);
 
   // Banners configured in the admin dashboard take over once at least one exists;
@@ -269,7 +274,7 @@ function CakeStore() {
           ))}
         </div>
 
-        <section className="py-9">
+        <section className="pb-6 pt-9">
           <h2 className="font-display text-3xl">A flavour for every craving</h2>
           <div className="relative mt-5">
             <div
@@ -286,7 +291,7 @@ function CakeStore() {
                   <span className="block aspect-square overflow-hidden rounded-md border border-border bg-muted">
                     <FlavourThumbnail label={flavour.label} slug={flavour.slug} />
                   </span>
-                  <span className="mt-2 block min-h-9 text-xs font-semibold leading-4 sm:text-sm">
+                  <span className="mt-2 block truncate text-xs font-semibold leading-4 sm:text-sm">
                     {flavour.label}
                   </span>
                 </Link>
@@ -315,31 +320,60 @@ function CakeStore() {
           <h2 className="text-2xl font-extrabold uppercase tracking-tight text-foreground sm:text-3xl">
             Cakes for every celebration
           </h2>
-          <div className="scrollbar-none mt-5 flex snap-x gap-4 overflow-x-auto pb-3 sm:grid sm:grid-cols-3 sm:overflow-visible lg:grid-cols-5">
-            {celebrations.map((occasion) => (
-              <Link
-                key={occasion.label}
-                to="/category/$categorySlug"
-                params={{ categorySlug: occasion.category }}
-                className="group relative h-44 w-64 shrink-0 snap-start overflow-hidden rounded-2xl bg-[#f3e3cf] p-4 sm:w-auto"
-              >
-                <img
-                  src={occasion.image}
-                  alt=""
-                  loading="lazy"
-                  className="absolute inset-y-0 right-0 h-full w-[58%] object-cover transition duration-300 group-hover:scale-105"
-                />
-                <div className="relative z-10 max-w-[48%]">
-                  <h3 className="text-base font-bold leading-tight text-foreground">
-                    {occasion.label}
-                  </h3>
-                  <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-background px-3 py-1.5 text-xs font-semibold shadow-sm">
-                    Order Now
-                    <ChevronRight size={13} />
-                  </span>
-                </div>
-              </Link>
-            ))}
+          <div className="relative mt-5">
+            <div
+              ref={celebrationScrollRef}
+              className="scrollbar-none flex snap-x gap-4 overflow-x-auto pb-3"
+            >
+              {celebrations.map((occasion) => (
+                <Link
+                  key={occasion.label}
+                  to="/category/$categorySlug"
+                  params={{ categorySlug: occasion.category }}
+                  className="group relative aspect-[2.15/1] w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-[#f6e9da] shadow-sm sm:w-[380px]"
+                >
+                  <img
+                    src={occasion.image}
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-y-0 right-0 h-full w-[62%] object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  {/* Soft fade from the text side into the photo, so the banner reads as one image. */}
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-r from-[#f6e9da] from-[38%] via-[#f6e9da]/60 via-[50%] to-transparent to-[66%]"
+                  />
+                  <div className="relative z-10 flex h-full max-w-[56%] flex-col p-4 sm:p-5">
+                    <h3 className="text-lg font-extrabold leading-tight text-primary sm:text-xl">
+                      {occasion.label}
+                    </h3>
+                    <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-foreground/75 sm:text-xs">
+                      {occasion.description}
+                    </p>
+                    <span className="mt-auto inline-flex w-fit items-center gap-0.5 rounded-md bg-background px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm">
+                      Order Now
+                      <ChevronRight size={12} />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <button
+              type="button"
+              aria-label="Scroll celebrations left"
+              onClick={() => scrollByCards(celebrationScrollRef, -1)}
+              className="absolute left-0 top-1/2 hidden -translate-x-3 -translate-y-1/2 rounded-full border border-border bg-background p-2 shadow-md transition hover:bg-accent sm:flex"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              aria-label="Scroll celebrations right"
+              onClick={() => scrollByCards(celebrationScrollRef, 1)}
+              className="absolute right-0 top-1/2 hidden -translate-y-1/2 translate-x-3 rounded-full border border-border bg-background p-2 shadow-md transition hover:bg-accent sm:flex"
+            >
+              <ChevronRight size={18} />
+            </button>
           </div>
         </section>
 
@@ -368,13 +402,17 @@ function CakeStore() {
               ))}
             </div>
 
-            <div className="relative mt-6">
-              <div
-                ref={characterScrollRef}
-                className="scrollbar-none flex snap-x gap-3 overflow-x-auto pb-1"
-              >
-                {activeGroup.cakes.map((cake) => (
-                  <div key={cake.id} className="w-40 shrink-0 snap-start sm:w-48">
+            <div className="mt-6">
+              <LoopingRail
+                items={activeGroup.cakes}
+                getKey={(cake) => cake.id}
+                resetKey={activeGroup.character}
+                trackClassName="gap-3 pb-1"
+                arrowClassName="hidden sm:flex"
+                previousLabel="Previous cakes"
+                nextLabel="Next cakes"
+                renderItem={(cake, duplicate) => (
+                  <div className="w-44 sm:w-52">
                     <CakeCard
                       href={`/product/${cake.slug}`}
                       image={cake.image}
@@ -384,26 +422,11 @@ function CakeStore() {
                       {...(cake.minPriceMrp != null && { minPriceMrp: cake.minPriceMrp })}
                       deliveryEstimate={cake.deliveryEstimate}
                       outOfStock={cake.outOfStock}
+                      {...(duplicate && { tabIndex: -1 })}
                     />
                   </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                aria-label="Scroll left"
-                onClick={() => scrollByCards(characterScrollRef, -1)}
-                className="absolute -left-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-border bg-background p-2 shadow-sm hover:bg-muted sm:flex"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                type="button"
-                aria-label="Scroll right"
-                onClick={() => scrollByCards(characterScrollRef, 1)}
-                className="absolute -right-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-border bg-background p-2 shadow-sm hover:bg-muted sm:flex"
-              >
-                <ChevronRight size={18} />
-              </button>
+                )}
+              />
             </div>
           </section>
         )}

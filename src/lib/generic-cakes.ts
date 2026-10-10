@@ -143,6 +143,9 @@ export async function getCakesForCategory(categoryId: string): Promise<GenericCa
   );
 }
 
+/** Hidden "Character Cakes" category — feeds the homepage and Kids Cakes character rails. */
+export const CHARACTER_CAKES_CATEGORY_ID = "6ff19f6d-9551-4830-a306-206b80a3d5f9";
+
 export type CharacterCakeGroup = {
   character: string;
   cakes: GenericCake[];

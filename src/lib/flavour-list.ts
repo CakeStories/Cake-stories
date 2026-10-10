@@ -2,7 +2,7 @@
 // search flyout's flavour chips, so both stay in sync with one list.
 export const flavours: { label: string; slug: string }[] = [
   { label: "Choco Truffle", slug: "choco-truffle" },
-  { label: "Romantic Red Velvet", slug: "romantic-red-velvet" },
+  { label: "Red Velvet", slug: "romantic-red-velvet" },
   { label: "White Forest", slug: "white-forest" },
   { label: "Black Forest", slug: "black-forest" },
   { label: "Rasamalai", slug: "rasamalai" },

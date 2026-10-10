@@ -9,7 +9,8 @@ import { getWeddingCakes } from "@/lib/wedding-cakes";
 import { getBirthdayCakes } from "@/lib/birthday-cakes";
 import { getKidsCakes } from "@/lib/kids-cakes";
 import { getCategories, getCategoryBySlug, basePathForCategorySlug } from "@/lib/categories";
-import { getCakesForCategory } from "@/lib/generic-cakes";
+import { CHARACTER_CAKES_CATEGORY_ID, getCakesForCategory, getCharacterCakes } from "@/lib/generic-cakes";
+import { shopTodayIso } from "@/lib/pricing";
 import { getCategoryBanners } from "@/lib/banners";
 import { CategoryBanners } from "@/components/category-banners";
 import { CustomizeWhatsAppBanner } from "@/components/customize-whatsapp-banner";
@@ -27,6 +28,27 @@ import {
 
 const SPECIAL_CAKE_SLUGS = new Set(["wedding-cakes", "birthday-cakes", "kids-cakes"]);
 
+/** Categories whose design-led listings don't need the flavour/price Filters button (sorting stays). */
+const NO_FILTER_SLUGS = new Set(["wedding-cakes", "kids-cakes", "holy-communion-cakes"]);
+
+/**
+ * Categories that aren't open yet: until the date (shop time, YYYY-MM-DD)
+ * the page shows "Coming soon" instead of its products and banners. Nothing
+ * is deleted — everything set up in /manage appears automatically on the day.
+ * To open early or later, change the date here.
+ */
+const COMING_SOON: Record<string, { opensOn: string; message: string }> = {
+  "new-arrivals": {
+    opensOn: "2026-12-01",
+    message: "Our Christmas menu — festive cakes, plum cakes, desserts and hampers — opens on 1 December.",
+  },
+};
+
+function comingSoonFor(slug: string) {
+  const entry = COMING_SOON[slug];
+  return entry && shopTodayIso() < entry.opensOn ? entry : null;
+}
+
 export const Route = createFileRoute("/category/$categorySlug")({
   loader: async ({ params }) => {
     const category = await getCategoryBySlug(params.categorySlug);
@@ -36,6 +58,11 @@ export const Route = createFileRoute("/category/$categorySlug")({
     const weddingCakes = category.slug === "wedding-cakes" ? await getWeddingCakes() : [];
     const birthdayCakes = category.slug === "birthday-cakes" ? await getBirthdayCakes() : [];
     const kidsCakes = category.slug === "kids-cakes" ? await getKidsCakes() : [];
+    // The Kids Cakes page leads with the character cakes, tabbed by character.
+    const characterGroups =
+      category.slug === "kids-cakes"
+        ? await getCharacterCakes(CHARACTER_CAKES_CATEGORY_ID).catch(() => [])
+        : [];
 
     // Every other category (Desserts, Christmas, and any new category the
     // shop owner creates) shows only real products managed from /manage —
@@ -46,7 +73,7 @@ export const Route = createFileRoute("/category/$categorySlug")({
 
     const categoryBanners = await getCategoryBanners(category.id).catch(() => ({ top: [], bottom: [] }));
 
-    return { category, weddingCakes, birthdayCakes, kidsCakes, featuredCakes, allCategories, categoryBanners };
+    return { category, weddingCakes, birthdayCakes, kidsCakes, characterGroups, featuredCakes, allCategories, categoryBanners };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -60,7 +87,8 @@ export const Route = createFileRoute("/category/$categorySlug")({
 });
 
 function CategoryPage() {
-  const { category, weddingCakes, birthdayCakes, kidsCakes, featuredCakes, allCategories, categoryBanners } = Route.useLoaderData();
+  const { category, weddingCakes, birthdayCakes, kidsCakes, characterGroups, featuredCakes, allCategories, categoryBanners } = Route.useLoaderData();
+  const comingSoon = comingSoonFor(category.slug);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   // Switching to another category starts with a clean slate.
   useEffect(() => setFilters(DEFAULT_FILTERS), [category.slug]);
@@ -93,6 +121,26 @@ function CategoryPage() {
           tabGroup: cake.tabGroup,
         })),
     [birthdayCakes],
+  );
+
+  // Same tabbed rail as Birthday Cakes, one tab per character.
+  const characterTabCakes = useMemo<TabbedCake[]>(
+    () =>
+      characterGroups.flatMap((group) =>
+        group.cakes.map((cake) => ({
+          id: cake.id,
+          href: `/product/${cake.slug}`,
+          image: cake.image,
+          title: cake.name,
+          badge: cake.badge,
+          minPrice: cake.minPrice,
+          ...(cake.minPriceMrp != null && { minPriceMrp: cake.minPriceMrp }),
+          deliveryEstimate: cake.deliveryEstimate,
+          outOfStock: cake.outOfStock,
+          tabGroup: group.character,
+        })),
+      ),
+    [characterGroups],
   );
 
   const byNameAsc = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
@@ -172,8 +220,8 @@ function CategoryPage() {
       <CategoryFilterBar
         state={filters}
         onChange={setFilters}
-        flavourOptions={flavourOptions}
-        priceOptions={priceOptions}
+        flavourOptions={NO_FILTER_SLUGS.has(category.slug) ? [] : flavourOptions}
+        priceOptions={NO_FILTER_SLUGS.has(category.slug) ? [] : priceOptions}
         shown={shownCount}
         total={totalCount}
       />
@@ -212,6 +260,18 @@ function CategoryPage() {
           <span className="text-foreground">{category.name}</span>
         </nav>
 
+        {comingSoon ? (
+          <div className="my-16 rounded-2xl border border-border bg-primary/[0.05] px-6 py-14 text-center">
+            <CakeSlice className="mx-auto text-primary" size={40} />
+            <p className="mt-4 text-xs font-bold uppercase tracking-widest text-primary">Coming soon</p>
+            <h1 className="mt-2 font-display text-3xl sm:text-4xl">{category.name}</h1>
+            <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">{comingSoon.message}</p>
+            <Button className="mt-6" asChild>
+              <Link to="/">Browse our cakes</Link>
+            </Button>
+          </div>
+        ) : (
+        <>
         <CategoryBanners banners={categoryBanners.top} />
 
         {isBirthdayBash ? (
@@ -309,7 +369,15 @@ function CategoryPage() {
           </>
         ) : isKidsCakes ? (
           <>
-          <div className="mt-6">{filterBar}</div>
+          {characterTabCakes.length > 0 && (
+            <CakeTabsRail
+              cakes={characterTabCakes}
+              tabOrder={characterGroups.map((group) => group.character)}
+              ariaLabel="Shop by character"
+              icon={() => "🎈"}
+            />
+          )}
+          <div className={characterTabCakes.length > 0 ? "mt-8" : "mt-6"}>{filterBar}</div>
           {sortedKidsCakes.length === 0 && noMatches}
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {sortedKidsCakes.map((cake) => (
@@ -365,6 +433,8 @@ function CategoryPage() {
         )}
 
         <CategoryBanners banners={categoryBanners.bottom} />
+        </>
+        )}
       </div>
 
       <SiteFooter />
