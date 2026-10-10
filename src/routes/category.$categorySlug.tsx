@@ -129,7 +129,7 @@ function CategoryPage() {
       characterGroups.flatMap((group) =>
         group.cakes.map((cake) => ({
           id: cake.id,
-          href: `/product/${cake.slug}`,
+          href: cake.href,
           image: cake.image,
           title: cake.name,
           badge: cake.badge,

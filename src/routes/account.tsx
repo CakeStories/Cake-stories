@@ -152,6 +152,11 @@ function AccountPage() {
                     </p>
                   )}
                 </div>
+                {Number(order.gst_amount) > 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Includes GST of ₹{Number(order.gst_amount).toFixed(2)}
+                  </p>
+                )}
                 <div className="mt-3 flex justify-between border-t border-border pt-3 text-sm font-semibold">
                   <span>Total</span>
                   <span>₹{order.total}</span>

@@ -7,8 +7,14 @@ import {
   INSTRUCTIONS_MAX,
   PICKUP_BRANCHES,
   TIME_SLOTS,
+  CAKE_GST_PERCENT,
+  PARTY_ESSENTIALS_CATEGORY_ID,
+  PARTY_ESSENTIALS_GST_PERCENT,
   applySitewideDiscount,
+  cakeDeliveryCheck,
   couponDiscount,
+  gstFor,
+  gstPercentForCategory,
   deliveryFeeFor,
   earliestDelivery,
   isoDate,
@@ -53,6 +59,9 @@ type PricedLine = {
   size: string | null;
   flavour: string | null;
   productId: string | null;
+  gstPercent: number;
+  /** Cakes are delivered only near Marthandam; Party Essentials and add-ons ship anywhere in India. */
+  isCake: boolean;
 };
 
 type CouponOutcome =
@@ -65,8 +74,11 @@ type PricedCart = {
   subtotal: number;
   coupon: CouponOutcome;
   discount: number;
+  /** GST added on top of the prices, by each line's category. */
+  gst: number;
   deliveryFee: number;
   total: number;
+  hasCake: boolean;
   /** True when the cart has a Wedding or Kids cake, which need 24 hours' notice instead of same-day delivery. */
   needsAdvanceNotice: boolean;
 };
@@ -171,6 +183,8 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
         size: product.weight,
         flavour: null,
         productId: null,
+        gstPercent: CAKE_GST_PERCENT,
+        isCake: true,
       };
     }
     if (ref.type === "variant") {
@@ -183,6 +197,8 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
         size: variant.size,
         flavour: variant.flavour,
         productId: variant.products.id,
+        gstPercent: gstPercentForCategory(variant.products.category_id),
+        isCake: variant.products.category_id !== PARTY_ESSENTIALS_CATEGORY_ID,
       };
     }
     const addon = addonById.get(ref.addonId);
@@ -193,6 +209,8 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
       size: null,
       flavour: null,
       productId: null,
+      gstPercent: PARTY_ESSENTIALS_GST_PERCENT,
+      isCake: false,
     };
   });
 
@@ -204,6 +222,14 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
   const discount = coupon.status === "applied" ? coupon.discount : 0;
   const deliveryFee = deliveryFeeFor(subtotal, cart.fulfillmentType);
 
+  const gst = gstFor(
+    lines.flatMap((line, i) =>
+      line ? [{ amount: line.unitPrice * cart.items[i]!.quantity, gstPercent: line.gstPercent }] : [],
+    ),
+    discount,
+  );
+  const hasCake = lines.some((line) => line?.isCake);
+
   const needsAdvanceNotice = variants.some(
     (v) => v.products?.category_id && ADVANCE_NOTICE_CATEGORY_IDS.has(v.products.category_id),
   );
@@ -213,9 +239,11 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
     subtotal,
     coupon,
     discount,
+    gst,
     deliveryFee,
-    total: Math.max(0, subtotal - discount + deliveryFee),
+    total: Math.round((Math.max(0, subtotal - discount) + gst + deliveryFee) * 100) / 100,
     needsAdvanceNotice,
+    hasCake,
   };
 }
 
@@ -229,9 +257,11 @@ export const quoteCheckout = createServerFn({ method: "POST" })
       subtotal: priced.subtotal,
       coupon: priced.coupon,
       discount: priced.discount,
+      gst: priced.gst,
       deliveryFee: priced.deliveryFee,
       total: priced.total,
       needsAdvanceNotice: priced.needsAdvanceNotice,
+      hasCake: priced.hasCake,
     };
   });
 
@@ -257,12 +287,25 @@ const createOrderSchema = cartSchema.extend({
   accessToken: z.string().max(4000).optional(),
 });
 
-function checkDetails(data: z.infer<typeof createOrderSchema>, needsAdvanceNotice: boolean) {
+function checkDetails(
+  data: z.infer<typeof createOrderSchema>,
+  needsAdvanceNotice: boolean,
+  hasCake: boolean,
+) {
   const { details, fulfillmentType } = data;
   if (fulfillmentType === "delivery") {
     if (!details.address) throw new Error("Enter your delivery address.");
     if (!details.city) throw new Error("Enter your city.");
     if (!/^\d{6}$/.test(details.pincode)) throw new Error("Enter a valid 6-digit pincode.");
+    // Cakes only within the Marthandam zone; Party Essentials alone ship anywhere in India.
+    if (hasCake) {
+      const zone = cakeDeliveryCheck({
+        lat: details.deliveryLat,
+        lng: details.deliveryLng,
+        pincode: details.pincode,
+      });
+      if (!zone.ok) throw new Error(zone.message);
+    }
   } else if (!details.pickupBranch || !PICKUP_BRANCHES.includes(details.pickupBranch)) {
     throw new Error("Choose a pickup branch.");
   }
@@ -305,7 +348,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
   .validator((data: unknown) => createOrderSchema.parse(data))
   .handler(async ({ data }) => {
     const priced = await priceCart(data);
-    checkDetails(data, priced.needsAdvanceNotice);
+    checkDetails(data, priced.needsAdvanceNotice, priced.hasCake);
 
     if (priced.lines.some((line) => line === null)) {
       throw new Error(
@@ -340,6 +383,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
         subtotal: priced.subtotal,
         delivery_charge: priced.deliveryFee,
         discount_amount: priced.discount,
+        gst_amount: priced.gst,
         coupon_code: priced.coupon.status === "applied" ? priced.coupon.code : null,
         total: priced.total,
         fulfillment_type: fulfillmentType,
@@ -369,6 +413,7 @@ export const createCheckoutOrder = createServerFn({ method: "POST" })
           flavour: line.flavour,
           quantity: item.quantity,
           unit_price: line.unitPrice,
+          gst_rate: line.gstPercent,
           customization:
             note || instructions
               ? { note: note || undefined, instructions: instructions || undefined }

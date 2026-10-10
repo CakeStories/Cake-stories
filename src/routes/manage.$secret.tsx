@@ -655,7 +655,10 @@ function OrderCard({
                     ({[item.size, item.flavour].filter(Boolean).join(" · ")})
                   </span>
                 )}
-                <span className="text-muted-foreground"> — ₹{item.unit_price * item.quantity}</span>
+                <span className="text-muted-foreground">
+                  {" "}— ₹{item.unit_price * item.quantity}
+                  {item.gst_rate != null && ` + ${Number(item.gst_rate)}% GST`}
+                </span>
                 {item.customization?.note && (
                   <span className="block text-xs">
                     Message on cake: <strong>"{item.customization.note}"</strong>
@@ -684,6 +687,12 @@ function OrderCard({
               <dt>Delivery</dt>
               <dd>{order.delivery_charge === 0 ? "Free" : `₹${order.delivery_charge}`}</dd>
             </div>
+            {order.gst_amount > 0 && (
+              <div className="flex justify-between">
+                <dt>GST</dt>
+                <dd>₹{order.gst_amount.toFixed(2)}</dd>
+              </div>
+            )}
             <div className="flex justify-between text-sm font-semibold text-foreground">
               <dt>Total{isPaid ? " paid" : ""}</dt>
               <dd>₹{order.total}</dd>

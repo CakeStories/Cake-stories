@@ -11,6 +11,7 @@ import { confirmCheckoutPayment, createCheckoutOrder, quoteCheckout } from "@/li
 import {
   PICKUP_BRANCHES,
   TIME_SLOTS,
+  cakeDeliveryCheck,
   deliveryFeeFor,
   earliestDelivery,
   hrefNeedsAdvanceNotice,
@@ -63,6 +64,11 @@ function loadRazorpayScript(): Promise<boolean> {
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
+}
+
+/** ₹523.95, or ₹524 when there are no paise. */
+function formatRupees(amount: number): string {
+  return Number.isInteger(amount) ? `₹${amount}` : `₹${amount.toFixed(2)}`;
 }
 
 function CheckoutPage() {
@@ -223,7 +229,17 @@ function CheckoutPage() {
   const deliveryFee = quoteIsCurrent
     ? quote.deliveryFee
     : deliveryFeeFor(localSubtotal, form.fulfillmentType);
+  const gst = quoteIsCurrent ? quote.gst : 0;
   const total = quoteIsCurrent ? quote.total : Math.max(0, subtotal - discountAmount + deliveryFee);
+
+  // Cakes are delivered only near Marthandam (checked by map pin or pincode);
+  // an order of only Party Essentials / add-ons can go anywhere in India.
+  const hasCake = quote?.hasCake ?? true;
+  const zone =
+    form.fulfillmentType === "delivery" && hasCake
+      ? cakeDeliveryCheck({ lat: form.deliveryLat, lng: form.deliveryLng, pincode: form.pincode })
+      : null;
+  const zoneChecked = form.deliveryLat != null || /^\d{6}$/.test(form.pincode);
   const coupon = quote?.coupon;
 
   const updateField = (field: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -247,6 +263,10 @@ function CheckoutPage() {
       setError(
         form.fulfillmentType === "pickup" ? "Choose a pickup date." : "Choose a delivery date.",
       );
+      return;
+    }
+    if (zone && !zone.ok) {
+      setError(zone.message);
       return;
     }
     if (coupon?.status === "invalid") {
@@ -513,6 +533,23 @@ function CheckoutPage() {
                       autoComplete="postal-code"
                     />
                   </div>
+                  {zone && zoneChecked && (
+                    <p
+                      role="status"
+                      className={`text-xs font-medium ${zone.ok ? "text-success" : "text-destructive"}`}
+                    >
+                      {zone.ok
+                        ? zone.via === "map" && zone.km != null
+                          ? `✓ We deliver here — about ${zone.km} km from Marthandam.`
+                          : "✓ We deliver cakes to this pincode."
+                        : zone.message}
+                    </p>
+                  )}
+                  {quote && !hasCake && (
+                    <p className="text-xs text-muted-foreground">
+                      Party Essentials are delivered anywhere in India.
+                    </p>
+                  )}
                 </>
               ) : (
                 <label className="block text-sm">
@@ -626,7 +663,7 @@ function CheckoutPage() {
                     <Loader2 size={16} className="animate-spin" /> Checking prices…
                   </>
                 ) : (
-                  `Pay ₹${total} with Razorpay`
+                  `Pay ${formatRupees(total)} with Razorpay`
                 )}
               </Button>
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -755,10 +792,14 @@ function CheckoutPage() {
                 </dt>
                 <dd>{deliveryFee === 0 ? "Free" : `₹${deliveryFee}`}</dd>
               </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">GST</dt>
+                <dd>{quoteIsCurrent ? formatRupees(gst) : "…"}</dd>
+              </div>
               <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
                 <dt>Total</dt>
                 <dd>
-                  {quoting ? <Loader2 size={14} className="inline animate-spin" /> : `₹${total}`}
+                  {quoting ? <Loader2 size={14} className="inline animate-spin" /> : formatRupees(total)}
                 </dd>
               </div>
             </dl>

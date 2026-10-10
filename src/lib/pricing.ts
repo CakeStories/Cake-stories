@@ -4,8 +4,100 @@
  * Keep every money calculation here so the two can never drift apart.
  */
 
-export const DELIVERY_FEE = 49;
+export const DELIVERY_FEE = 60;
 export const FREE_DELIVERY_THRESHOLD = 999;
+
+/* ------------------------------------------------------------------ GST --- */
+
+// GST is added on top of the listed prices at checkout, by category.
+export const CAKE_GST_PERCENT = 5;
+export const PARTY_ESSENTIALS_GST_PERCENT = 18; // Party Essentials products and add-ons (candles…)
+export const PARTY_ESSENTIALS_CATEGORY_ID = "11baa536-a88a-4ea6-991e-a60e2ee6ac03";
+
+/** GST % for a product in this category; everything that isn't Party Essentials is a cake. */
+export function gstPercentForCategory(categoryId: string | null | undefined): number {
+  return categoryId === PARTY_ESSENTIALS_CATEGORY_ID ? PARTY_ESSENTIALS_GST_PERCENT : CAKE_GST_PERCENT;
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * GST on the cart: each line's own rate, applied after the coupon discount
+ * (spread across lines in proportion to their value). Delivery isn't taxed.
+ */
+export function gstFor(
+  lines: Array<{ amount: number; gstPercent: number }>,
+  discount: number,
+): number {
+  const subtotal = lines.reduce((sum, l) => sum + l.amount, 0);
+  if (subtotal <= 0) return 0;
+  const keep = Math.max(0, 1 - discount / subtotal);
+  return round2(lines.reduce((sum, l) => sum + (l.amount * keep * l.gstPercent) / 100, 0));
+}
+
+/* -------------------------------------------------------- Delivery zone --- */
+
+// Cakes are delivered only within this distance of Marthandam. Party
+// Essentials and add-ons on their own can be delivered anywhere in India.
+export const CAKE_DELIVERY_RADIUS_KM = 15;
+export const CAKE_DELIVERY_CENTER = { lat: 8.3134758, lng: 77.2263071 }; // Marthandam (629165)
+
+/**
+ * Pincodes inside the cake delivery zone, for customers who type a pincode
+ * instead of pinning their location on the map. Pincodes cover areas, not
+ * points, so this is approximate — a map pin is always checked by exact
+ * distance instead. Add or remove pincodes here as needed.
+ */
+export const CAKE_DELIVERY_PINCODES: ReadonlySet<string> = new Set([
+  // Marthandam, Kuzhithurai and the immediate surroundings
+  "629165", "629160", "629162", "629163", "629166", "629167", "629168", "629169", "629177",
+  // Arumanai, Kulasekharam, Velimalai, Thuckalay
+  "629151", "629161", "629164", "629175",
+  // Towards the coast and the Kerala border (Karungal, Kaliyakkavilai, Thengapattanam…)
+  "629152", "629153", "629154", "629155", "629156", "629157", "629158", "629159",
+  "629170", "629171", "629172", "629173", "629174", "629176", "629178", "629179",
+  // Kerala side: Parassala, Karakonam
+  "695502", "695504",
+]);
+
+/** Straight-line distance between two points, in km. */
+export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const rad = (x: number) => (x * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
+export type ZoneCheck = { ok: true; via: "map" | "pincode"; km?: number } | { ok: false; message: string };
+
+/**
+ * Can a cake be delivered here? A map pin is checked by exact distance (and
+ * wins over the pincode, being more precise); without one, the pincode must
+ * be on the zone list.
+ */
+export function cakeDeliveryCheck(where: {
+  lat?: number | null | undefined;
+  lng?: number | null | undefined;
+  pincode?: string | undefined;
+}): ZoneCheck {
+  const outside = `We deliver cakes within ${CAKE_DELIVERY_RADIUS_KM} km of Marthandam. Choose store pickup, or contact us for a special arrangement.`;
+  if (where.lat != null && where.lng != null) {
+    const km = distanceKm(CAKE_DELIVERY_CENTER, { lat: where.lat, lng: where.lng });
+    return km <= CAKE_DELIVERY_RADIUS_KM
+      ? { ok: true, via: "map", km: Math.round(km * 10) / 10 }
+      : { ok: false, message: `That location is about ${Math.round(km)} km from Marthandam. ${outside}` };
+  }
+  const pincode = where.pincode?.trim() ?? "";
+  if (CAKE_DELIVERY_PINCODES.has(pincode)) return { ok: true, via: "pincode" };
+  return {
+    ok: false,
+    message: /^\d{6}$/.test(pincode)
+      ? `Pincode ${pincode} is outside our cake delivery area. ${outside} If you're close by, pin your location on the map to check.`
+      : "Enter your 6-digit pincode, or pin your location on the map.",
+  };
+}
 
 // Delivery windows, not exact times — standard delivery hours are 9am–6pm.
 export const TIME_SLOTS = ["9:00 am - 12:00 pm", "12:00 pm - 3:00 pm", "3:00 pm - 6:00 pm"];

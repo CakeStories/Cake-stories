@@ -184,6 +184,7 @@ export type AdminOrder = {
   subtotal: number;
   delivery_charge: number;
   discount_amount: number;
+  gst_amount: number;
   coupon_code: string | null;
   total: number;
   payment_status: string;
@@ -196,6 +197,7 @@ export type AdminOrder = {
     flavour: string | null;
     quantity: number;
     unit_price: number;
+    gst_rate: number | null;
     customization: { note?: string; instructions?: string } | null;
   }>;
 };
@@ -210,7 +212,7 @@ export const adminListOrders = createServerFn({ method: "POST" })
     await assertValidToken(data.token);
     const paymentFilter = data.payment === "all" ? "" : `&payment_status=eq.${data.payment}`;
     const rows = await adminRest<AdminOrder[]>(
-      "orders?select=id,created_at,customer_name,customer_email,customer_phone,delivery_address,delivery_date,delivery_time,fulfillment_type,pickup_branch,delivery_lat,delivery_lng,subtotal,delivery_charge,discount_amount,coupon_code,total,payment_status,order_status,razorpay_order_id,razorpay_payment_id,order_items(product_name,size,flavour,quantity,unit_price,customization)" +
+      "orders?select=id,created_at,customer_name,customer_email,customer_phone,delivery_address,delivery_date,delivery_time,fulfillment_type,pickup_branch,delivery_lat,delivery_lng,subtotal,delivery_charge,discount_amount,gst_amount,coupon_code,total,payment_status,order_status,razorpay_order_id,razorpay_payment_id,order_items(product_name,size,flavour,quantity,unit_price,gst_rate,customization)" +
         `${paymentFilter}&order=created_at.desc&limit=200`,
     );
     return rows.map((row) => ({
@@ -218,6 +220,7 @@ export const adminListOrders = createServerFn({ method: "POST" })
       subtotal: Number(row.subtotal),
       delivery_charge: Number(row.delivery_charge),
       discount_amount: Number(row.discount_amount),
+      gst_amount: Number(row.gst_amount ?? 0),
       total: Number(row.total),
       order_items: row.order_items.map((item) => ({
         ...item,

@@ -134,8 +134,12 @@ function CartPage() {
                   <dt className="text-muted-foreground">Delivery</dt>
                   <dd>{deliveryFee === 0 ? "Free" : `₹${deliveryFee}`}</dd>
                 </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">GST (5% cakes, 18% party items)</dt>
+                  <dd className="text-muted-foreground">At checkout</dd>
+                </div>
                 <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
-                  <dt>Total</dt>
+                  <dt>Total before GST</dt>
                   <dd>₹{total}</dd>
                 </div>
               </dl>

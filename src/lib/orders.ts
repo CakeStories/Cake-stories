@@ -5,6 +5,7 @@ export type OrderRecord = {
   subtotal: number;
   delivery_charge: number;
   discount_amount: number | null;
+  gst_amount: number | null;
   coupon_code: string | null;
   total: number;
   payment_status: string;
@@ -32,7 +33,7 @@ export type OrderRecord = {
 export async function getMyOrders(accessToken: string): Promise<OrderRecord[]> {
   return supabaseRestAsUser<OrderRecord>("orders", accessToken, {
     select:
-      "id,subtotal,delivery_charge,discount_amount,coupon_code,total,payment_status,order_status,delivery_address,delivery_date,delivery_time,fulfillment_type,pickup_branch,razorpay_payment_id,created_at,order_items(product_name,flavour,size,quantity,unit_price,customization)",
+      "id,subtotal,delivery_charge,discount_amount,gst_amount,coupon_code,total,payment_status,order_status,delivery_address,delivery_date,delivery_time,fulfillment_type,pickup_branch,razorpay_payment_id,created_at,order_items(product_name,flavour,size,quantity,unit_price,customization)",
     filters: { payment_status: "eq.paid" },
     order: "created_at.desc",
   });

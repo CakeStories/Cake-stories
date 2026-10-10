@@ -414,7 +414,7 @@ function CakeStore() {
                 renderItem={(cake, duplicate) => (
                   <div className="w-44 sm:w-52">
                     <CakeCard
-                      href={`/product/${cake.slug}`}
+                      href={cake.href}
                       image={cake.image}
                       title={cake.name}
                       badge={cake.badge}

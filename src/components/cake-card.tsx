@@ -86,14 +86,14 @@ export function CakeCard({
         <h3 className="truncate text-sm font-semibold leading-5 group-hover:text-primary" title={title}>
           {title}
         </h3>
-        {/* Price left, delivery time right; the time only drops a line on very narrow cards. */}
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+        <div className="mt-1">
           <PriceTag price={shown.price} mrp={shown.mrp ?? null} size="sm" />
-          <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-success">
-            <Clock3 size={12} />
-            {deliveryEstimate}
-          </span>
         </div>
+        {/* Its own line, bottom-right, so a long sale price never pushes it around. */}
+        <p className="mt-1 flex items-center justify-end gap-1 text-[11px] font-medium text-success">
+          <Clock3 size={12} />
+          {deliveryEstimate}
+        </p>
       </div>
     </Link>
   );

@@ -4,6 +4,7 @@ import {
   fetchRowsForCategoryProducts,
 } from "@/lib/supabase";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/image-fallback";
+import { KIDS_CAKES_CATEGORY_ID } from "@/lib/kids-cakes";
 
 export type GenericCakeVariant = {
   id: string;
@@ -146,10 +147,51 @@ export async function getCakesForCategory(categoryId: string): Promise<GenericCa
 /** Hidden "Character Cakes" category — feeds the homepage and Kids Cakes character rails. */
 export const CHARACTER_CAKES_CATEGORY_ID = "6ff19f6d-9551-4830-a306-206b80a3d5f9";
 
+/** A character cake plus where its card should link (its own page, or the matching Kids Cakes product). */
+export type CharacterCake = GenericCake & { href: string };
+
 export type CharacterCakeGroup = {
   character: string;
-  cakes: GenericCake[];
+  cakes: CharacterCake[];
 };
+
+
+const nameKey = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+type KidsPriceRow = {
+  name: string;
+  slug: string;
+  product_variants: Array<{ price: number | string; mrp: number | string | null; active: boolean }>;
+};
+
+/**
+ * Most character cakes are copies of a Kids Cakes design (same name) whose
+ * prices live on the Kids Cakes product. Returns each Kids Cakes design's
+ * starting price, keyed by name, so an unpriced character cake can show it
+ * and link to the Kids Cakes product, where the customer picks a size.
+ */
+async function kidsCakePricesByName(): Promise<
+  Map<string, { slug: string; minPrice: number; minPriceMrp?: number }>
+> {
+  const rows = await supabaseRest<KidsPriceRow>("products", {
+    select: "name,slug,product_variants(price,mrp,active)",
+    filters: { category_id: `eq.${KIDS_CAKES_CATEGORY_ID}`, active: "eq.true" },
+  });
+  const byName = new Map<string, { slug: string; minPrice: number; minPriceMrp?: number }>();
+  for (const row of rows) {
+    const priced = row.product_variants
+      .filter((v) => v.active && Number(v.price) > 0)
+      .sort((a, b) => Number(a.price) - Number(b.price));
+    const cheapest = priced[0];
+    if (!cheapest) continue;
+    byName.set(nameKey(row.name), {
+      slug: row.slug,
+      minPrice: Number(cheapest.price),
+      ...(cheapest.mrp != null && { minPriceMrp: Number(cheapest.mrp) }),
+    });
+  }
+  return byName;
+}
 
 /**
  * The homepage "Character Cake" rail — every active product tagged with a
@@ -198,11 +240,22 @@ export async function getCharacterCakes(categoryId: string): Promise<CharacterCa
       imageByProduct.set(img.product_id, img.image_url);
   }
 
-  const groups = new Map<string, GenericCake[]>();
+  const kidsPrices = await kidsCakePricesByName().catch(() => new Map<string, never>());
+
+  const groups = new Map<string, CharacterCake[]>();
   for (const p of products) {
     const tag = p.character_tag?.trim();
     if (!tag) continue;
-    const cake = toGenericCake(p, variantsByProduct.get(p.id) ?? [], imageByProduct.get(p.id));
+    const own = toGenericCake(p, variantsByProduct.get(p.id) ?? [], imageByProduct.get(p.id));
+    const kids = own.minPrice > 0 ? undefined : kidsPrices.get(nameKey(own.name));
+    const cake: CharacterCake = kids
+      ? {
+          ...own,
+          minPrice: kids.minPrice,
+          ...(kids.minPriceMrp != null ? { minPriceMrp: kids.minPriceMrp } : {}),
+          href: `/kids-cake/${kids.slug}`,
+        }
+      : { ...own, href: `/product/${own.slug}` };
     const list = groups.get(tag) ?? [];
     list.push(cake);
     groups.set(tag, list);

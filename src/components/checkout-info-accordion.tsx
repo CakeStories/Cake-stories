@@ -1,4 +1,11 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/accordion";
+import {
+  CAKE_DELIVERY_RADIUS_KM,
+  CAKE_GST_PERCENT,
+  DELIVERY_FEE,
+  FREE_DELIVERY_THRESHOLD,
+  PARTY_ESSENTIALS_GST_PERCENT,
+} from "@/lib/pricing";
 
 export function CheckoutInfoAccordion() {
   return (
@@ -41,6 +48,14 @@ export function CheckoutInfoAccordion() {
         <AccordionTrigger className="text-sm font-semibold">Delivery Information</AccordionTrigger>
         <AccordionContent className="space-y-3 text-sm text-muted-foreground">
           <ul className="list-disc space-y-1.5 pl-4">
+            <li>
+              Cakes are delivered within {CAKE_DELIVERY_RADIUS_KM} km of Marthandam. Party Essentials ordered on
+              their own are delivered anywhere in India.
+            </li>
+            <li>
+              Delivery is ₹{DELIVERY_FEE}, free on orders above ₹{FREE_DELIVERY_THRESHOLD}. GST is added at
+              checkout: {CAKE_GST_PERCENT}% on cakes, {PARTY_ESSENTIALS_GST_PERCENT}% on Party Essentials.
+            </li>
             <li>Every cake is freshly handcrafted, so slight variations in design and appearance may occur.</li>
             <li>
               Delivery timings are approximate and may vary depending on product availability and delivery
