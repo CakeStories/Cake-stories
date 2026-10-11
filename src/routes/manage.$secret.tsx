@@ -1438,6 +1438,13 @@ function BannersPanel({
         items: sorted.filter((b) => b.category_id === c.id),
       })),
     ];
+    // Banners whose category isn't in the list (yet — it loads separately) still show.
+    const known = new Set(categories.map((c) => c.id));
+    groups.push({
+      key: "other",
+      label: "Category pages",
+      items: sorted.filter((b) => b.category_id && !known.has(b.category_id)),
+    });
     return groups.filter((g) => g.items.length > 0);
   }, [sorted, categories]);
 
