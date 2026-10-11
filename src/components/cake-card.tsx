@@ -17,6 +17,7 @@ export function CakeCard({
   fit = "cover",
   outOfStock = false,
   tabIndex,
+  imageSizes = "(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw",
 }: {
   href: string;
   image: string;
@@ -45,6 +46,8 @@ export function CakeCard({
   outOfStock?: boolean;
   /** -1 for repeated copies in a looping rail, so keyboard users skip the duplicates. */
   tabIndex?: number;
+  /** The card's rendered width, for picking the photo size (defaults suit the category grids). */
+  imageSizes?: string;
 }) {
   // Show the same sale price the product page and checkout use.
   const settings = useStoreSettings();
@@ -62,7 +65,7 @@ export function CakeCard({
     >
       <div className="relative aspect-square overflow-hidden bg-muted">
         <img
-          {...responsiveImage(image, 320, "(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw")}
+          {...responsiveImage(image, 320, imageSizes)}
           alt={title}
           loading="lazy"
           onError={onProductImageError}

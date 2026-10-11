@@ -72,7 +72,7 @@ function flavourImageCandidates(label: string, slug: string) {
 function heroSrcSet(image: string): string | undefined {
   const at = (w: number) => resizedImageUrl(image, w, 75);
   if (at(640) === image) return undefined; // not a Supabase photo (bundled artwork)
-  return [640, 1280, 1920].map((w) => `${at(w)} ${w}w`).join(", ");
+  return [640, 960, 1280, 1920].map((w) => `${at(w)} ${w}w`).join(", ");
 }
 
 function FlavourThumbnail({ label, slug }: { label: string; slug: string }) {
@@ -442,6 +442,7 @@ function CakeStore() {
                       deliveryEstimate={cake.deliveryEstimate}
                       outOfStock={cake.outOfStock}
                       {...(duplicate && { tabIndex: -1 })}
+                      imageSizes="(min-width: 640px) 208px, 176px"
                     />
                   </div>
                 )}
