@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -124,6 +125,21 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+/** A thin bar across the top while the next page loads, so every tap gets instant feedback. */
+function NavigationProgress() {
+  const loading = useRouterState({ select: (state) => state.isLoading });
+  if (!loading) return null;
+  return (
+    <div
+      role="progressbar"
+      aria-label="Loading page"
+      className="fixed inset-x-0 top-0 z-[100] h-[3px] overflow-hidden bg-primary/15"
+    >
+      <span className="nav-progress block h-full w-1/3 bg-primary" />
+    </div>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -134,6 +150,7 @@ function RootComponent() {
           <CartProvider>
             <WishlistProvider>
               {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <NavigationProgress />
               <Outlet />
             </WishlistProvider>
           </CartProvider>

@@ -75,6 +75,26 @@ function fallbackImage(slug: string): string {
  * the shop owner adds or cross-lists from /manage — with only active sizes.
  */
 export async function getWeddingCakes(): Promise<WeddingCake[]> {
+  // Prices and photos for the category's own products don't depend on the
+  // product list, so start them now; the identical requests below reuse these.
+  void Promise.all([
+    fetchRowsForCategoryProducts<VariantRow>(
+      "product_variants",
+      WEDDING_CAKES_CATEGORY_ID,
+      [],
+      "id,product_id,flavour,size,price,mrp",
+      { active: "eq.true" },
+      "product_id.asc,size.asc,flavour.asc",
+    ),
+    fetchRowsForCategoryProducts<ImageRow>(
+      "product_images",
+      WEDDING_CAKES_CATEGORY_ID,
+      [],
+      "product_id,image_url",
+      undefined,
+      "product_id.asc",
+    ),
+  ]).catch(() => {});
   const { products, crossListedIds } = await fetchProductsForCategory<ProductRow>(
     WEDDING_CAKES_CATEGORY_ID,
     "id,category_id,name,slug,description,badge,delivery_estimate,tab_group,image_url,out_of_stock",

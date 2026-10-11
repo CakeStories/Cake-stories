@@ -100,6 +100,26 @@ function toGenericCake(
 
 /** Every active Supabase-backed product assigned to OR cross-listed into a category — used for categories the shop owner manages from /manage (including new ones they create themselves). */
 export async function getCakesForCategory(categoryId: string): Promise<GenericCake[]> {
+  // Prices and photos for the category's own products don't depend on the
+  // product list, so start them now; the identical requests below reuse these.
+  void Promise.all([
+    fetchRowsForCategoryProducts<VariantRow>(
+      "product_variants",
+      categoryId,
+      [],
+      "id,product_id,flavour,size,price,mrp",
+      { active: "eq.true" },
+      "product_id.asc",
+    ),
+    fetchRowsForCategoryProducts<ImageRow>(
+      "product_images",
+      categoryId,
+      [],
+      "product_id,image_url",
+      undefined,
+      "product_id.asc",
+    ),
+  ]).catch(() => {});
   const { products, crossListedIds } = await fetchProductsForCategory<ProductRow>(
     categoryId,
     "id,category_id,slug,name,description,badge,delivery_estimate,tab_group,image_url,out_of_stock",
@@ -218,6 +238,28 @@ async function kidsCakePricesByName(): Promise<
  * a valid category_id for product-detail lookups.
  */
 export async function getCharacterCakes(categoryId: string): Promise<CharacterCakeGroup[]> {
+  // Independent of everything below — start it straight away.
+  const kidsPricesPromise = kidsCakePricesByName().catch(() => new Map<string, never>());
+  // Prices and photos for the category's own products don't depend on the
+  // product list, so start them now; the identical requests below reuse these.
+  void Promise.all([
+    fetchRowsForCategoryProducts<VariantRow>(
+      "product_variants",
+      categoryId,
+      [],
+      "id,product_id,flavour,size,price,mrp",
+      { active: "eq.true" },
+      "product_id.asc",
+    ),
+    fetchRowsForCategoryProducts<ImageRow>(
+      "product_images",
+      categoryId,
+      [],
+      "product_id,image_url",
+      undefined,
+      "product_id.asc",
+    ),
+  ]).catch(() => {});
   const { products, crossListedIds } = await fetchProductsForCategory<
     ProductRow & { character_tag: string | null }
   >(categoryId, "id,category_id,slug,name,description,badge,delivery_estimate,tab_group,image_url,out_of_stock,character_tag", {
@@ -257,7 +299,7 @@ export async function getCharacterCakes(categoryId: string): Promise<CharacterCa
       imageByProduct.set(img.product_id, img.image_url);
   }
 
-  const kidsPrices = await kidsCakePricesByName().catch(() => new Map<string, never>());
+  const kidsPrices = await kidsPricesPromise;
 
   const groups = new Map<string, CharacterCake[]>();
   for (const p of products) {

@@ -183,3 +183,23 @@
 @utility animate-rise {
   animation: rise-in 0.6s ease-out both;
 }
+
+/* Top-of-page loading bar while navigating (see NavigationProgress in __root.tsx). */
+@keyframes nav-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+.nav-progress {
+  animation: nav-progress 0.9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-progress {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}

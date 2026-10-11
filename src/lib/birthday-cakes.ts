@@ -64,6 +64,26 @@ function sizeWeight(size: string): number {
 }
 
 export async function getBirthdayCakes(): Promise<BirthdayCake[]> {
+  // Prices and photos for the category's own products don't depend on the
+  // product list, so start them now; the identical requests below reuse these.
+  void Promise.all([
+    fetchRowsForCategoryProducts<VariantRow>(
+      "product_variants",
+      BIRTHDAY_CAKES_CATEGORY_ID,
+      [],
+      "id,product_id,size,price,mrp",
+      { active: "eq.true" },
+      "product_id.asc",
+    ),
+    fetchRowsForCategoryProducts<ImageRow>(
+      "product_images",
+      BIRTHDAY_CAKES_CATEGORY_ID,
+      [],
+      "product_id,image_url",
+      undefined,
+      "product_id.asc",
+    ),
+  ]).catch(() => {});
   const { products, crossListedIds } = await fetchProductsForCategory<ProductRow>(
     BIRTHDAY_CAKES_CATEGORY_ID,
     "id,slug,name,description,badge,delivery_estimate,tab_group,image_url,out_of_stock",

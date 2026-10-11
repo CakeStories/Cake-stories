@@ -58,6 +58,26 @@ type ImageRow = {
 };
 
 export async function getKidsCakes(): Promise<KidsCake[]> {
+  // Prices and photos for the category's own products don't depend on the
+  // product list, so start them now; the identical requests below reuse these.
+  void Promise.all([
+    fetchRowsForCategoryProducts<VariantRow>(
+      "product_variants",
+      KIDS_CAKES_CATEGORY_ID,
+      [],
+      "id,product_id,flavour,size,price,mrp",
+      { active: "eq.true" },
+      "product_id.asc,size.asc,flavour.asc",
+    ),
+    fetchRowsForCategoryProducts<ImageRow>(
+      "product_images",
+      KIDS_CAKES_CATEGORY_ID,
+      [],
+      "product_id,image_url",
+      undefined,
+      "product_id.asc",
+    ),
+  ]).catch(() => {});
   const { products, crossListedIds } = await fetchProductsForCategory<ProductRow>(
     KIDS_CAKES_CATEGORY_ID,
     "id,slug,name,description,badge,delivery_estimate,tab_group,image_url,out_of_stock",

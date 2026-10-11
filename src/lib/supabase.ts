@@ -41,11 +41,14 @@ const PUBLIC_OBJECT_PATH = "/sb/storage/v1/object/public/";
  * a 200 px card wastes megabytes. Other URLs (bundled assets, /public files)
  * are returned unchanged.
  */
-export function resizedImageUrl(url: string, width: number, quality = 70): string {
+export function resizedImageUrl(url: string, width: number, quality = 80): string {
   const proxied = proxiedImageUrl(url);
   if (!proxied.startsWith(PUBLIC_OBJECT_PATH)) return url;
   const path = proxied.slice(PUBLIC_OBJECT_PATH.length).split("?")[0];
-  return `/sb/storage/v1/render/image/public/${path}?width=${width}&quality=${quality}`;
+  // resize=contain scales the WHOLE photo down. Without it, a width-only
+  // request keeps the original height and cuts a narrow strip from the
+  // middle — the cake ends up cropped.
+  return `/sb/storage/v1/render/image/public/${path}?width=${width}&resize=contain&quality=${quality}`;
 }
 
 /**
@@ -130,6 +133,31 @@ async function fetchAllPages<T>(url: string, headers: Record<string, string>): P
   return results;
 }
 
+/**
+ * Short-lived memory of public catalogue reads (categories, products, prices,
+ * photos, banners). Tapping between pages re-runs the same queries; serving
+ * them from memory turns each repeat from a network round trip into nothing.
+ * In the browser it lasts 5 minutes; on the server 60 s (pages are also
+ * cached at the CDN). Only anonymous reads use it — never anything signed-in —
+ * and checkout always re-prices on the server, so a cached price is only ever
+ * a display value. Identical requests already in flight are shared too.
+ */
+const READ_CACHE_MS = typeof window === "undefined" ? 60_000 : 5 * 60_000;
+const readCache = new Map<string, { at: number; rows: Promise<unknown[]> }>();
+
+function cachedFetchAllPages<T>(url: string, headers: Record<string, string>): Promise<T[]> {
+  const hit = readCache.get(url);
+  if (hit && Date.now() - hit.at < READ_CACHE_MS) {
+    return hit.rows.then((rows) => rows.slice() as T[]);
+  }
+  const rows = fetchAllPages<T>(url, headers);
+  readCache.set(url, { at: Date.now(), rows });
+  // Never keep a failure — the next request tries again.
+  rows.catch(() => readCache.delete(url));
+  if (readCache.size > 500) readCache.delete(readCache.keys().next().value!);
+  return rows.then((r) => r.slice());
+}
+
 export async function supabaseRest<T>(table: string, options: QueryOptions): Promise<T[]> {
   const { url, key } = getSupabaseConfig();
   const params = new URLSearchParams({ select: options.select });
@@ -140,7 +168,7 @@ export async function supabaseRest<T>(table: string, options: QueryOptions): Pro
 
   if (options.order) params.set("order", options.order);
 
-  return fetchAllPages<T>(`${url}/rest/v1/${table}?${params.toString()}`, {
+  return cachedFetchAllPages<T>(`${url}/rest/v1/${table}?${params.toString()}`, {
     apikey: key,
     Authorization: `Bearer ${key}`,
   });
@@ -190,7 +218,7 @@ export async function supabaseRestByProductFilter<T>(
 
   if (options.order) params.set("order", options.order);
 
-  return fetchAllPages<T>(`${url}/rest/v1/${table}?${params.toString()}`, {
+  return cachedFetchAllPages<T>(`${url}/rest/v1/${table}?${params.toString()}`, {
     apikey: key,
     Authorization: `Bearer ${key}`,
   });
@@ -209,16 +237,18 @@ export async function fetchProductsForCategory<P extends { id: string }>(
   select: string,
   extraFilters?: Record<string, string>,
 ): Promise<{ products: P[]; crossListedIds: string[] }> {
-  const primary = await supabaseRest<P>("products", {
-    select,
-    filters: { category_id: `eq.${categoryId}`, ...(extraFilters ?? {}) },
-    order: "name.asc",
-  });
-
-  const links = await supabaseRest<{ product_id: string }>("product_category_links", {
-    select: "product_id",
-    filters: { category_id: `eq.${categoryId}` },
-  });
+  // Independent queries — run them together rather than one after the other.
+  const [primary, links] = await Promise.all([
+    supabaseRest<P>("products", {
+      select,
+      filters: { category_id: `eq.${categoryId}`, ...(extraFilters ?? {}) },
+      order: "name.asc",
+    }),
+    supabaseRest<{ product_id: string }>("product_category_links", {
+      select: "product_id",
+      filters: { category_id: `eq.${categoryId}` },
+    }),
+  ]);
 
   const primaryIds = new Set(primary.map((p) => p.id));
   const crossListedIds = [...new Set(links.map((l) => l.product_id))].filter((id) => !primaryIds.has(id));

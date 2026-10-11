@@ -55,23 +55,23 @@ export const Route = createFileRoute("/category/$categorySlug")({
     if (!category) throw notFound();
 
     const isSpecial = SPECIAL_CAKE_SLUGS.has(category.slug);
-    const weddingCakes = category.slug === "wedding-cakes" ? await getWeddingCakes() : [];
-    const birthdayCakes = category.slug === "birthday-cakes" ? await getBirthdayCakes() : [];
-    const kidsCakes = category.slug === "kids-cakes" ? await getKidsCakes() : [];
-    // The Kids Cakes page leads with the character cakes, tabbed by character.
-    const characterGroups =
-      category.slug === "kids-cakes"
-        ? await getCharacterCakes(CHARACTER_CAKES_CATEGORY_ID).catch(() => [])
-        : [];
+    const none = Promise.resolve([] as never[]);
 
+    // Everything below only needs the category, so fetch it all at once
+    // instead of one request after another.
     // Every other category (Desserts, Christmas, and any new category the
-    // shop owner creates) shows only real products managed from /manage —
-    // no more hand-entered placeholder cakes mixed in.
-    const [featuredCakes, allCategories] = isSpecial
-      ? [[], []]
-      : await Promise.all([getCakesForCategory(category.id), getCategories()]);
-
-    const categoryBanners = await getCategoryBanners(category.id).catch(() => ({ top: [], bottom: [] }));
+    // shop owner creates) shows only real products managed from /manage.
+    const [weddingCakes, birthdayCakes, kidsCakes, characterGroups, featuredCakes, allCategories, categoryBanners] =
+      await Promise.all([
+        category.slug === "wedding-cakes" ? getWeddingCakes() : none,
+        category.slug === "birthday-cakes" ? getBirthdayCakes() : none,
+        category.slug === "kids-cakes" ? getKidsCakes() : none,
+        // The Kids Cakes page leads with the character cakes, tabbed by character.
+        category.slug === "kids-cakes" ? getCharacterCakes(CHARACTER_CAKES_CATEGORY_ID).catch(() => []) : none,
+        isSpecial ? none : getCakesForCategory(category.id),
+        isSpecial ? none : getCategories(),
+        getCategoryBanners(category.id).catch(() => ({ top: [], bottom: [] })),
+      ]);
 
     return { category, weddingCakes, birthdayCakes, kidsCakes, characterGroups, featuredCakes, allCategories, categoryBanners };
   },
