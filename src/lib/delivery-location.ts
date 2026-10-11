@@ -18,6 +18,7 @@ export const BRANCH_LOCATIONS = [
   {
     id: "pammam",
     label: "Pammam",
+    pickupBranch: "Pammam, NH 47 Marthandam",
     address: "One Stop Supermarket Building, NH 47 Trivandrum Main Road, Marthandam",
     phone: "+91 97467 63777",
     mapsUrl: "https://share.google/S27MxcUvVy0D80oFe",
@@ -98,7 +99,7 @@ export function useDeliveryLocation() {
 
   /**
    * Sets the delivery location from a 6-digit PIN code — but only inside our
-   * cake delivery area (within 15 km of Marthandam; the same pincode list
+   * cake delivery area (within 15 km of one of our shops; the same pincode list
    * checkout uses). Outside it, nothing is saved and the customer is told we
    * can't deliver there. India Post's public API supplies the area name.
    */
@@ -112,7 +113,7 @@ export function useDeliveryLocation() {
       return {
         ok: false,
         notDeliverable: true,
-        message: `Not deliverable to this location. We deliver cakes within ${CAKE_DELIVERY_RADIUS_KM} km of Marthandam — you can still order for store pickup.`,
+        message: `Not deliverable to this location. We deliver cakes within ${CAKE_DELIVERY_RADIUS_KM} km of our shops — you can still order for store pickup.`,
       };
     }
     try {

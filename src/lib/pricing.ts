@@ -37,10 +37,14 @@ export function gstFor(
 
 /* -------------------------------------------------------- Delivery zone --- */
 
-// Cakes are delivered only within this distance of Marthandam. Party
+// Cakes are delivered only within this distance of one of our shops. Party
 // Essentials and add-ons on their own can be delivered anywhere in India.
 export const CAKE_DELIVERY_RADIUS_KM = 15;
-export const CAKE_DELIVERY_CENTER = { lat: 8.3134758, lng: 77.2263071 }; // Marthandam (629165)
+export const CAKE_DELIVERY_SHOPS = [
+  { name: "Anducode", lat: 8.35774, lng: 77.21997 },
+  { name: "Pammam", lat: 8.30311, lng: 77.23147 },
+  { name: "North Street, Marthandam", lat: 8.3081, lng: 77.2214 },
+];
 
 /**
  * Pincodes inside the cake delivery zone, for customers who type a pincode
@@ -56,8 +60,10 @@ export const CAKE_DELIVERY_PINCODES: ReadonlySet<string> = new Set([
   // Towards the coast and the Kerala border (Karungal, Kaliyakkavilai, Thengapattanam…)
   "629152", "629153", "629154", "629155", "629156", "629157", "629158", "629159",
   "629170", "629171", "629172", "629173", "629174", "629176", "629178", "629179",
-  // Kerala side: Parassala, Karakonam
-  "695502", "695504",
+  // Kerala side: Parassala, Karakonam, Vellarada side
+  "695502", "695504", "695505",
+  // Within 15 km of Anducode/Pammam: Melpuram–Alancholai, Enayam, Colachel, Neyyoor, Mukkalampadu
+  "629101", "629193", "629251", "629802", "629804",
 ]);
 
 /** Straight-line distance between two points, in km. */
@@ -70,10 +76,13 @@ export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; ln
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
-export type ZoneCheck = { ok: true; via: "map" | "pincode"; km?: number } | { ok: false; message: string };
+export type ZoneCheck =
+  | { ok: true; via: "map" | "pincode"; km?: number; shop?: string }
+  | { ok: false; message: string };
 
 /**
- * Can a cake be delivered here? A map pin is checked by exact distance (and
+ * Can a cake be delivered here? A map pin is checked by exact distance to the
+ * nearest shop (and
  * wins over the pincode, being more precise); without one, the pincode must
  * be on the zone list.
  */
@@ -82,12 +91,16 @@ export function cakeDeliveryCheck(where: {
   lng?: number | null | undefined;
   pincode?: string | undefined;
 }): ZoneCheck {
-  const outside = `We deliver cakes within ${CAKE_DELIVERY_RADIUS_KM} km of Marthandam. Choose store pickup, or contact us for a special arrangement.`;
+  const outside = `We deliver cakes within ${CAKE_DELIVERY_RADIUS_KM} km of our shops. Choose store pickup, or contact us for a special arrangement.`;
   if (where.lat != null && where.lng != null) {
-    const km = distanceKm(CAKE_DELIVERY_CENTER, { lat: where.lat, lng: where.lng });
-    return km <= CAKE_DELIVERY_RADIUS_KM
-      ? { ok: true, via: "map", km: Math.round(km * 10) / 10 }
-      : { ok: false, message: `That location is about ${Math.round(km)} km from Marthandam. ${outside}` };
+    const point = { lat: where.lat, lng: where.lng };
+    // Distance to the nearest shop — anywhere within range of any shop is fine.
+    const nearest = CAKE_DELIVERY_SHOPS.map((shop) => ({ shop: shop.name, km: distanceKm(shop, point) })).sort(
+      (a, b) => a.km - b.km,
+    )[0]!;
+    return nearest.km <= CAKE_DELIVERY_RADIUS_KM
+      ? { ok: true, via: "map", km: Math.round(nearest.km * 10) / 10, shop: nearest.shop }
+      : { ok: false, message: `That location is about ${Math.round(nearest.km)} km from our nearest shop. ${outside}` };
   }
   const pincode = where.pincode?.trim() ?? "";
   if (CAKE_DELIVERY_PINCODES.has(pincode)) return { ok: true, via: "pincode" };
@@ -112,7 +125,11 @@ export const SAME_DAY_CUTOFF_HOUR = 15; // 3:00 PM
 /** How far ahead of a slot's start an order needs to land for the kitchen to make it in time. */
 const PREP_BUFFER_HOURS = 3;
 
-export const PICKUP_BRANCHES = ["North Street, Marthandam", "Arumanai Main Road, Anducode"];
+export const PICKUP_BRANCHES = [
+  "North Street, Marthandam",
+  "Pammam, NH 47 Marthandam",
+  "Arumanai Main Road, Anducode",
+];
 
 export const CAKE_MESSAGE_MAX = 60;
 export const INSTRUCTIONS_MAX = 300;

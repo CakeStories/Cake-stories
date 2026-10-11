@@ -542,7 +542,7 @@ function CheckoutPage() {
                   {zone && zoneChecked && zone.ok && (
                     <p role="status" className="text-xs font-medium text-success">
                       {zone.via === "map" && zone.km != null
-                        ? `✓ We deliver here — about ${zone.km} km from Marthandam.`
+                        ? `✓ We deliver here — about ${zone.km} km from our ${zone.shop} shop.`
                         : "✓ We deliver cakes to this pincode."}
                     </p>
                   )}

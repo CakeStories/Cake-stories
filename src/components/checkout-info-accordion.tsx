@@ -49,7 +49,7 @@ export function CheckoutInfoAccordion() {
         <AccordionContent className="space-y-3 text-sm text-muted-foreground">
           <ul className="list-disc space-y-1.5 pl-4">
             <li>
-              Cakes are delivered within {CAKE_DELIVERY_RADIUS_KM} km of Marthandam. Party Essentials ordered on
+              Cakes are delivered within {CAKE_DELIVERY_RADIUS_KM} km of our shops in Marthandam, Pammam and Anducode. Party Essentials ordered on
               their own are delivered anywhere in India.
             </li>
             <li>

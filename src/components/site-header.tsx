@@ -160,7 +160,7 @@ function SearchDropdown({
 
 /**
  * "Delivering to" picker: type a pincode, or choose one of our shops. Cakes are
- * delivered only within 15 km of Marthandam — a pincode outside that area is
+ * delivered only within 15 km of one of our shops — a pincode outside that area is
  * refused with a clear "Not deliverable to this location". A popover (not a
  * dropdown menu, which swallows typed digits) so it works on touch screens.
  */
@@ -245,7 +245,7 @@ function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) 
               <X size={14} className="shrink-0" /> Not deliverable to this location
             </p>
             <p className="mt-1 text-foreground/80">
-              We deliver cakes within 15 km of Marthandam. You can still order for pickup from one of
+              We deliver cakes within 15 km of our shops. You can still order for pickup from one of
               our shops below, and Party Essentials ship anywhere in India.
             </p>
           </div>
