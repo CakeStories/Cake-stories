@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CAKE_DELIVERY_PINCODES, CAKE_DELIVERY_RADIUS_KM } from "@/lib/pricing";
 
 /**
  * The "Delivering to" choice from the header, remembered in localStorage so
@@ -77,40 +78,48 @@ export function useDeliveryLocation() {
     if (branch) setLocation(branch);
   };
 
-  /** Looks up a 6-digit Indian PIN code via India Post's public API and sets the delivery location to its area. */
+  /**
+   * Sets the delivery location from a 6-digit PIN code — but only inside our
+   * cake delivery area (within 15 km of Marthandam; the same pincode list
+   * checkout uses). Outside it, nothing is saved and the customer is told we
+   * can't deliver there. India Post's public API supplies the area name.
+   */
   const setByPincode = async (
     pincode: string,
-  ): Promise<{ ok: true } | { ok: false; message: string }> => {
+  ): Promise<{ ok: true } | { ok: false; message: string; notDeliverable?: true }> => {
     if (!/^\d{6}$/.test(pincode)) {
       return { ok: false, message: "Enter a valid 6-digit pincode." };
     }
+    if (!CAKE_DELIVERY_PINCODES.has(pincode)) {
+      return {
+        ok: false,
+        notDeliverable: true,
+        message: `Not deliverable to this location. We deliver cakes within ${CAKE_DELIVERY_RADIUS_KM} km of Marthandam — you can still order for store pickup.`,
+      };
+    }
     try {
-      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {
+        signal: AbortSignal.timeout(6000),
+      });
       if (!response.ok) throw new Error("lookup failed");
       const data = (await response.json()) as Array<{
         Status: string;
         PostOffice: Array<{ Name: string; District: string; State: string }> | null;
       }>;
       const postOffice = data[0]?.PostOffice?.[0];
-      if (data[0]?.Status !== "Success" || !postOffice) {
-        return {
-          ok: false,
-          message: "Couldn't find that pincode — check the number and try again.",
-        };
-      }
       setLocation({
         id: `pincode-${pincode}`,
-        label: `${postOffice.District}, ${postOffice.State}`,
-        address: `PIN ${pincode} — ${postOffice.Name}`,
+        label: postOffice ? `${postOffice.Name} · ${pincode}` : `PIN ${pincode}`,
+        address: postOffice ? `${postOffice.Name}, ${postOffice.District} ${pincode}` : `PIN ${pincode}`,
         pincode,
-        city: postOffice.District,
+        city: postOffice?.District ?? "",
       });
       return { ok: true };
     } catch {
-      return {
-        ok: false,
-        message: "Couldn't look up that pincode right now — check your connection and try again.",
-      };
+      // The pincode is already known to be in our area — the lookup only
+      // supplies a nicer name, so accept it even if India Post is down.
+      setLocation({ id: `pincode-${pincode}`, label: `PIN ${pincode}`, pincode });
+      return { ok: true };
     }
   };
 

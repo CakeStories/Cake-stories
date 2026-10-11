@@ -13,15 +13,6 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import { categories as staticCategories } from "@/lib/static-categories";
 import { getCategories } from "@/lib/categories";
@@ -38,6 +29,7 @@ import {
   removeRecentSearch,
 } from "@/lib/recent-searches";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
 import iconBirthdayCakes from "@/assets/category-icon-birthday-cakes.png";
 import iconWeddingCakes from "@/assets/category-icon-wedding-cakes.png";
 import iconKidsCakes from "@/assets/category-icon-kids-cakes.png";
@@ -166,6 +158,129 @@ function SearchDropdown({
   );
 }
 
+/**
+ * "Delivering to" picker: type a pincode, or choose one of our shops. Cakes are
+ * delivered only within 15 km of Marthandam — a pincode outside that area is
+ * refused with a clear "Not deliverable to this location". A popover (not a
+ * dropdown menu, which swallows typed digits) so it works on touch screens.
+ */
+function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) {
+  const { location, setBranch, setByPincode } = useDeliveryLocation();
+  const [open, setOpen] = useState(false);
+  const [pincode, setPincode] = useState("");
+  const [status, setStatus] = useState<{
+    loading: boolean;
+    error: string | null;
+    notDeliverable?: boolean;
+  }>({ loading: false, error: null });
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setStatus({ loading: true, error: null });
+    const result = await setByPincode(pincode.trim());
+    if (result.ok) {
+      setPincode("");
+      setStatus({ loading: false, error: null });
+      setOpen(false);
+    } else {
+      setStatus({ loading: false, error: result.message, ...(result.notDeliverable && { notDeliverable: true }) });
+    }
+  };
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setStatus({ loading: false, error: null });
+      }}
+    >
+      <PopoverTrigger asChild>
+        {variant === "desktop" ? (
+          <button
+            type="button"
+            className="ml-3 hidden items-center gap-2 border-l border-border pl-5 text-left text-xs lg:flex"
+          >
+            <MapPin size={18} className="text-primary" />
+            <span>
+              <span className="block text-muted-foreground">Delivering to</span>
+              <strong className="flex items-center gap-1">
+                {location.label} <ChevronDown size={13} />
+              </strong>
+            </span>
+          </button>
+        ) : (
+          <button type="button" className="flex w-full items-center gap-1.5 text-left text-xs">
+            <MapPin size={15} className="shrink-0 text-primary" />
+            <span className="text-muted-foreground">Delivering to</span>
+            <strong className="min-w-0 truncate">{location.label}</strong>
+            <ChevronDown size={13} className="shrink-0" />
+          </button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-3">
+        <p className="text-sm font-semibold">Check delivery to your area</p>
+        <form onSubmit={submit} className="mt-2 flex gap-1.5">
+          <input
+            value={pincode}
+            onChange={(e) => {
+              setPincode(e.target.value.replace(/\D/g, "").slice(0, 6));
+              if (status.error) setStatus({ loading: false, error: null });
+            }}
+            placeholder="Enter your pincode"
+            aria-label="Pincode"
+            inputMode="numeric"
+            autoComplete="postal-code"
+            className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-base outline-none focus:ring-2 focus:ring-ring sm:text-sm"
+          />
+          <Button type="submit" disabled={status.loading || pincode.length !== 6}>
+            {status.loading ? "…" : "Check"}
+          </Button>
+        </form>
+        {status.notDeliverable ? (
+          <div role="alert" className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-xs">
+            <p className="flex items-center gap-1.5 font-semibold text-destructive">
+              <X size={14} className="shrink-0" /> Not deliverable to this location
+            </p>
+            <p className="mt-1 text-foreground/80">
+              We deliver cakes within 15 km of Marthandam. You can still order for pickup from one of
+              our shops below, and Party Essentials ship anywhere in India.
+            </p>
+          </div>
+        ) : (
+          status.error && (
+            <p role="alert" className="mt-1.5 text-xs text-destructive">
+              {status.error}
+            </p>
+          )
+        )}
+        <p className="mt-3 border-t border-border pt-3 text-xs font-semibold text-muted-foreground">
+          Or pick up from one of our shops
+        </p>
+        <ul className="mt-1.5 space-y-1">
+          {BRANCH_LOCATIONS.map((shop) => (
+            <li key={shop.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  setBranch(shop.id);
+                  setOpen(false);
+                }}
+                className={`w-full rounded-md px-2 py-1.5 text-left transition hover:bg-muted ${
+                  location.id === shop.id ? "bg-primary/10" : ""
+                }`}
+              >
+                <span className="block text-sm font-medium">{shop.label}</span>
+                <span className="block text-xs text-muted-foreground">{shop.address}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function Logo() {
   return (
     <Link to="/" className="flex items-center" aria-label="Cake Stories home">
@@ -205,25 +320,6 @@ export function SiteHeader({
   const { count: wishlistCount } = useWishlist();
   const { user } = useAuth();
   const settings = useStoreSettings();
-  const { location, setBranch, setByPincode } = useDeliveryLocation();
-  const [pincodeInput, setPincodeInput] = useState("");
-  const [pincodeStatus, setPincodeStatus] = useState<{ loading: boolean; error: string | null }>({
-    loading: false,
-    error: null,
-  });
-
-  const submitPincode = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setPincodeStatus({ loading: true, error: null });
-    const result = await setByPincode(pincodeInput.trim());
-    if (result.ok) {
-      setPincodeInput("");
-      setPincodeStatus({ loading: false, error: null });
-    } else {
-      setPincodeStatus({ loading: false, error: result.message });
-    }
-  };
-
   // Categories come from the database now (so the shop owner can rename or
   // add one from /manage), but we render the last-known static list
   // immediately so the nav never flashes empty while this loads.
@@ -319,57 +415,7 @@ export function SiteHeader({
             </SheetContent>
           </Sheet>
           <Logo />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="ml-3 hidden items-center gap-2 border-l border-border pl-5 text-left text-xs lg:flex">
-                <MapPin size={18} className="text-primary" />
-                <span>
-                  <span className="block text-muted-foreground">Delivering to</span>
-                  <strong className="flex items-center gap-1">
-                    {location.label} <ChevronDown size={13} />
-                  </strong>
-                </span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-72">
-              <DropdownMenuLabel>Delivering to</DropdownMenuLabel>
-              <div className="px-2 py-1.5">
-                <form onSubmit={submitPincode} className="flex gap-1.5">
-                  <input
-                    value={pincodeInput}
-                    onChange={(e) => setPincodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="Enter your pincode"
-                    inputMode="numeric"
-                    className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={pincodeStatus.loading || pincodeInput.length !== 6}
-                  >
-                    {pincodeStatus.loading ? "…" : "Go"}
-                  </Button>
-                </form>
-                {pincodeStatus.error && (
-                  <p className="mt-1 text-xs text-destructive">{pincodeStatus.error}</p>
-                )}
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Or pick one of our locations</DropdownMenuLabel>
-              <DropdownMenuRadioGroup value={location.id} onValueChange={setBranch}>
-                {BRANCH_LOCATIONS.map((loc) => (
-                  <DropdownMenuRadioItem
-                    key={loc.id}
-                    value={loc.id}
-                    className="flex-col items-start gap-0"
-                  >
-                    <span className="font-medium">{loc.label}</span>
-                    <span className="text-xs text-muted-foreground">{loc.address}</span>
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <DeliveryLocationPicker variant="desktop" />
           <form
             onSubmit={submitSearch}
             className="relative ml-auto hidden w-full max-w-xl md:block"
@@ -468,6 +514,9 @@ export function SiteHeader({
             />
           )}
         </form>
+        <div className="border-t border-border px-4 py-2 lg:hidden">
+          <DeliveryLocationPicker variant="mobile" />
+        </div>
       </header>
 
       {!hideCategories && (
