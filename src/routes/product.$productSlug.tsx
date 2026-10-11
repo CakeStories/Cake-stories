@@ -26,14 +26,17 @@ export const Route = createFileRoute("/product/$productSlug")({
     // Otherwise this may be a product the shop owner added themselves from
     // /manage, under any category (including a brand new one) — look it up
     // directly in Supabase instead.
-    const cake = await getCakeBySlugAnywhere(params.productSlug);
+    // These don't depend on each other — fetch them together.
+    const [cake, allCategories, partyEssentials] = await Promise.all([
+      getCakeBySlugAnywhere(params.productSlug),
+      getCategories(),
+      getPartyEssentials(params.productSlug).catch(() => []),
+    ]);
     if (!cake) throw notFound();
 
-    const allCategories = await getCategories();
     const category = allCategories.find((c) => c.id === cake.categoryId);
     const siblings = await getCakesForCategory(cake.categoryId);
     const related = siblings.filter((c) => c.id !== cake.id).slice(0, 5);
-    const partyEssentials = await getPartyEssentials(cake.slug);
     return { kind: "generic" as const, cake, category, related, partyEssentials };
   },
   head: ({ loaderData }) => {

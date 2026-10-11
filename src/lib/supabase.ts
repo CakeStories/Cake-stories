@@ -106,30 +106,44 @@ const PAGE_SIZE = 1000;
  * always retrieves the complete result, however large.
  */
 async function fetchAllPages<T>(url: string, headers: Record<string, string>): Promise<T[]> {
-  const results: T[] = [];
-  let start = 0;
-
-  while (true) {
+  const fetchPage = async (start: number, withCount: boolean) => {
     const response = await fetch(url, {
-      headers: { ...headers, Range: `${start}-${start + PAGE_SIZE - 1}` },
+      headers: {
+        ...headers,
+        Range: `${start}-${start + PAGE_SIZE - 1}`,
+        ...(withCount && { Prefer: "count=exact" }),
+      },
     });
-
     // A 416 on the very first page just means the table/filter matched
     // nothing at all — treat that as an empty result, not an error.
-    if (response.status === 416 && start === 0) break;
-
+    if (response.status === 416 && start === 0) return { rows: [] as T[], total: 0 };
     if (!response.ok) {
       const body = await response.text();
       throw new Error(`Supabase request failed (${response.status}): ${body}`);
     }
+    // "Content-Range: 0-999/3012" — the total after the slash (count=exact).
+    const total = Number(response.headers.get("content-range")?.split("/")[1]);
+    return { rows: proxyStorageUrls((await response.json()) as T[]), total };
+  };
 
-    const page = proxyStorageUrls((await response.json()) as T[]);
-    results.push(...page);
+  const first = await fetchPage(0, true);
+  if (first.rows.length < PAGE_SIZE) return first.rows;
 
-    if (page.length < PAGE_SIZE) break;
-    start += PAGE_SIZE;
+  // Fetch the remaining pages all at once, rather than one after another.
+  if (Number.isFinite(first.total) && first.total > PAGE_SIZE) {
+    const starts: number[] = [];
+    for (let start = PAGE_SIZE; start < first.total; start += PAGE_SIZE) starts.push(start);
+    const rest = await Promise.all(starts.map((start) => fetchPage(start, false)));
+    return [...first.rows, ...rest.flatMap((page) => page.rows)];
   }
 
+  // No total available: fall back to paging until a short page comes back.
+  const results = [...first.rows];
+  for (let start = PAGE_SIZE; ; start += PAGE_SIZE) {
+    const page = await fetchPage(start, false);
+    results.push(...page.rows);
+    if (page.rows.length < PAGE_SIZE) break;
+  }
   return results;
 }
 

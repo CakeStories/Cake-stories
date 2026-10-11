@@ -11,6 +11,8 @@ import { responsiveImage } from "@/lib/supabase";
 
 export const Route = createFileRoute("/birthday-cake/$slug")({
   loader: async ({ params }) => {
+    // Independent of the cake lookup — start it straight away.
+    const partyEssentialsPromise = getPartyEssentials(params.slug).catch(() => []);
     const cakes = await getBirthdayCakes();
     const cake = cakes.find((c) => c.slug === params.slug);
     if (!cake) throw notFound();
@@ -28,7 +30,7 @@ export const Route = createFileRoute("/birthday-cake/$slug")({
             .map((c) => ({ slug: c.slug, label: c.name }))
         : undefined;
 
-    const partyEssentials = await getPartyEssentials(cake.slug);
+    const partyEssentials = await partyEssentialsPromise;
     return { cake, related, familyOptions, partyEssentials };
   },
   head: ({ loaderData }) => ({

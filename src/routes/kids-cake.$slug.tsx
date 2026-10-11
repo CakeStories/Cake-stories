@@ -10,11 +10,13 @@ import { responsiveImage } from "@/lib/supabase";
 
 export const Route = createFileRoute("/kids-cake/$slug")({
   loader: async ({ params }) => {
+    // Independent of the cake lookup — start it straight away.
+    const partyEssentialsPromise = getPartyEssentials(params.slug).catch(() => []);
     const cakes = await getKidsCakes();
     const cake = cakes.find((c) => c.slug === params.slug);
     if (!cake) throw notFound();
     const related = cakes.filter((c) => c.id !== cake.id).slice(0, 5);
-    const partyEssentials = await getPartyEssentials(cake.slug);
+    const partyEssentials = await partyEssentialsPromise;
     return { cake, related, partyEssentials };
   },
   head: ({ loaderData }) => ({
