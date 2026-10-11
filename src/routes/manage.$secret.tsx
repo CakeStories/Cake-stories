@@ -37,6 +37,7 @@ import {
   adminDeleteAddon,
   adminDeleteBanner,
   adminDeleteCoupon,
+  adminDeleteProduct,
   adminDeleteVariant,
   adminGetCatalog,
   adminGetStoreSettings,
@@ -233,9 +234,6 @@ function Dashboard({
 }) {
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
-  const [categoryId, setCategoryId] = useState<string>("");
-  const [query, setQuery] = useState("");
-  const [showAddProduct, setShowAddProduct] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -260,14 +258,6 @@ function Dashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  const visible = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    return products.filter((product) => {
-      if (categoryId && product.category_id !== categoryId) return false;
-      if (!term) return true;
-      return product.name.toLowerCase().includes(term) || product.slug.toLowerCase().includes(term);
-    });
-  }, [products, categoryId, query]);
 
   const [tab, setTab] = useState<
     "orders" | "products" | "banners" | "store" | "extras" | "coupons" | "categories"
@@ -317,76 +307,14 @@ function Dashboard({
       {tab === "orders" ? (
         <OrdersPanel token={token} onAuthError={onAuthError} />
       ) : tab === "products" ? (
-        <>
-          <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-            <label className="relative block">
-              <Search
-                size={15}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search cakes…"
-                className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              />
-            </label>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">All categories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mt-3">
-            <Button size="sm" variant="secondary" onClick={() => setShowAddProduct((s) => !s)}>
-              <Plus size={13} /> {showAddProduct ? "Cancel" : "Add new product"}
-            </Button>
-            {showAddProduct && (
-              <AddProductForm
-                token={token}
-                categories={categories}
-                defaultCategoryId={categoryId || categories[0]?.id || ""}
-                onClose={() => setShowAddProduct(false)}
-                onCreated={load}
-              />
-            )}
-          </div>
-
-          {error && (
-            <p className="mt-5 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </p>
-          )}
-
-          {loading && products.length === 0 ? (
-            <p className="mt-10 flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 size={15} className="animate-spin" /> Loading catalogue…
-            </p>
-          ) : (
-            <>
-              <p className="mt-5 text-sm text-muted-foreground">{visible.length} products</p>
-              <div className="mt-4 space-y-4">
-                {visible.map((product) => (
-                  <ProductRow
-                    key={product.id}
-                    product={product}
-                    token={token}
-                    categories={categories}
-                    onChanged={load}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </>
+        <ProductsSection
+          token={token}
+          categories={categories}
+          products={products}
+          loading={loading}
+          error={error}
+          onChanged={load}
+        />
       ) : tab === "banners" ? (
         <BannersPanel token={token} categories={categories} onAuthError={onAuthError} />
       ) : tab === "store" ? (
@@ -399,6 +327,250 @@ function Dashboard({
         <CategoriesPanel token={token} onAuthError={onAuthError} onChanged={load} />
       )}
     </div>
+  );
+}
+
+/* ---------------------------------------------------------- products tab --- */
+
+/** True when the product belongs to the category, as its main category or cross-listed into it. */
+function inCategory(product: AdminProduct, categoryId: string) {
+  return product.category_id === categoryId || product.crossListedCategoryIds.includes(categoryId);
+}
+
+/**
+ * Products organised by category: pick a category (with product counts),
+ * then its products are grouped by tab / character. Each product is a
+ * compact row that opens its full editor. Search looks across everything.
+ */
+function ProductsSection({
+  token,
+  categories,
+  products,
+  loading,
+  error,
+  onChanged,
+}: {
+  token: string;
+  categories: AdminCategory[];
+  products: AdminProduct[];
+  loading: boolean;
+  error: string | null;
+  onChanged: () => void;
+}) {
+  const [categoryId, setCategoryId] = useState("");
+  const [query, setQuery] = useState("");
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [open, setOpen] = useState<Set<string>>(new Set());
+
+  // Start on the first category once they've loaded.
+  useEffect(() => {
+    if (!categoryId && categories[0]) setCategoryId(categories[0].id);
+  }, [categories, categoryId]);
+
+  const counts = useMemo(
+    () => new Map(categories.map((c) => [c.id, products.filter((p) => inCategory(p, c.id)).length])),
+    [categories, products],
+  );
+
+  const term = query.trim().toLowerCase();
+  const searching = term.length > 0;
+  const visible = useMemo(
+    () =>
+      products.filter((p) =>
+        searching
+          ? p.name.toLowerCase().includes(term) || p.slug.toLowerCase().includes(term)
+          : inCategory(p, categoryId),
+      ),
+    [products, categoryId, term, searching],
+  );
+
+  // Group by the cake's tab (Birthday Cakes) or character (Character Cakes).
+  const groups = useMemo(() => {
+    const byGroup = new Map<string, AdminProduct[]>();
+    for (const p of visible) {
+      const key = searching ? "" : (p.tab_group?.trim() || p.character_tag?.trim() || "");
+      byGroup.set(key, [...(byGroup.get(key) ?? []), p]);
+    }
+    return [...byGroup.entries()].sort(([x], [y]) => (x === "" ? 1 : y === "" ? -1 : x.localeCompare(y)));
+  }, [visible, searching]);
+
+  const category = categories.find((c) => c.id === categoryId);
+  const toggle = (id: string) =>
+    setOpen((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  return (
+    <>
+      <label className="relative mt-5 block">
+        <Search
+          size={15}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search all cakes by name…"
+          className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+        />
+      </label>
+
+      {!searching && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {categories.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => {
+                setCategoryId(c.id);
+                setShowAddProduct(false);
+              }}
+              className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                c.id === categoryId
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background hover:border-primary/50"
+              } ${c.active ? "" : "opacity-60"}`}
+            >
+              {c.name}
+              <span className={`ml-1.5 text-xs ${c.id === categoryId ? "opacity-80" : "text-muted-foreground"}`}>
+                {counts.get(c.id) ?? 0}
+              </span>
+              {!c.active && <span className="ml-1 text-xs">(hidden)</span>}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+        <h2 className="font-display text-2xl">
+          {searching ? `Search results` : (category?.name ?? "Products")}
+          <span className="ml-2 text-sm font-normal text-muted-foreground">
+            {visible.length} {visible.length === 1 ? "product" : "products"}
+          </span>
+        </h2>
+        {!searching && category && (
+          <Button size="sm" variant="secondary" onClick={() => setShowAddProduct((v) => !v)}>
+            <Plus size={13} /> {showAddProduct ? "Cancel" : `Add product to ${category.name}`}
+          </Button>
+        )}
+      </div>
+      {showAddProduct && category && (
+        <AddProductForm
+          token={token}
+          categories={categories}
+          defaultCategoryId={category.id}
+          onClose={() => setShowAddProduct(false)}
+          onCreated={onChanged}
+        />
+      )}
+
+      {error && <p className="mt-5 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+
+      {loading && products.length === 0 ? (
+        <p className="mt-10 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 size={15} className="animate-spin" /> Loading catalogue…
+        </p>
+      ) : visible.length === 0 ? (
+        <p className="mt-8 text-sm text-muted-foreground">
+          {searching ? "No cakes match that search." : "No products in this category yet."}
+        </p>
+      ) : (
+        <div className="mt-4 space-y-6">
+          {groups.map(([group, items]) => (
+            <section key={group || "_ungrouped"}>
+              {groups.length > 1 && (
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {group || "No tab"} · {items.length}
+                </h3>
+              )}
+              <div className="space-y-2">
+                {items.map((product) =>
+                  open.has(product.id) ? (
+                    <div key={product.id}>
+                      <button
+                        type="button"
+                        onClick={() => toggle(product.id)}
+                        className="mb-1 text-xs font-semibold text-primary hover:underline"
+                      >
+                        ▲ Close {product.name}
+                      </button>
+                      <ProductRow product={product} token={token} categories={categories} onChanged={onChanged} />
+                    </div>
+                  ) : (
+                    <ProductSummary
+                      key={product.id}
+                      product={product}
+                      categoryName={
+                        searching ? categories.find((c) => c.id === product.category_id)?.name : undefined
+                      }
+                      onOpen={() => toggle(product.id)}
+                    />
+                  ),
+                )}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** One compact line per product; tap to open the full editor. */
+function ProductSummary({
+  product,
+  categoryName,
+  onOpen,
+}: {
+  product: AdminProduct;
+  categoryName?: string | undefined;
+  onOpen: () => void;
+}) {
+  const prices = product.variants.filter((v) => v.active).map((v) => v.price).filter((p) => p > 0);
+  const priceText =
+    prices.length === 0
+      ? "No price"
+      : Math.min(...prices) === Math.max(...prices)
+        ? `₹${Math.min(...prices)}`
+        : `₹${Math.min(...prices)} – ₹${Math.max(...prices)}`;
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-2 text-left transition hover:border-primary/40 hover:bg-muted/40"
+    >
+      <span className="size-12 shrink-0 overflow-hidden rounded-md bg-muted">
+        {product.image_url && (
+          <img src={resizedImageUrl(product.image_url, 120)} alt="" className="h-full w-full object-cover" />
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold">{product.name}</span>
+        <span className="block truncate text-xs text-muted-foreground">
+          {priceText} · {product.variants.length} {product.variants.length === 1 ? "size" : "sizes"}
+          {categoryName ? ` · ${categoryName}` : ""}
+        </span>
+      </span>
+      {product.out_of_stock && (
+        <span className="shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
+          Out of stock
+        </span>
+      )}
+      {!product.active && (
+        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+          Hidden
+        </span>
+      )}
+      {prices.length === 0 && (
+        <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+          Needs price
+        </span>
+      )}
+      <span className="shrink-0 text-xs font-semibold text-primary">Edit ▾</span>
+    </button>
   );
 }
 
@@ -756,6 +928,7 @@ function ProductRow({
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [outOfStock, setOutOfStock] = useState(product.out_of_stock);
+  const [deleted, setDeleted] = useState(false);
 
   const flash = (message: string) => {
     setStatus(message);
@@ -770,6 +943,24 @@ function ProductRow({
     } catch (err) {
       flash(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
+      setBusy(false);
+    }
+  };
+
+  const deleteProduct = async () => {
+    const ok = window.confirm(
+      `Delete "${product.name}" permanently?
+
+Its sizes, prices and photos are removed from the shop. Past orders keep their details. This can't be undone — to hide it for now, use "Mark out of stock" instead.`,
+    );
+    if (!ok) return;
+    setBusy(true);
+    try {
+      await adminDeleteProduct({ data: { token, productId: product.id } });
+      setDeleted(true); // show it gone straight away; the list reloads in the background
+      onChanged();
+    } catch (err) {
+      flash(err instanceof Error ? err.message : "Couldn't delete this product.");
       setBusy(false);
     }
   };
@@ -887,6 +1078,14 @@ function ProductRow({
       });
       onChanged();
     }, "Image updated");
+
+  if (deleted) {
+    return (
+      <p className="rounded-lg border border-dashed border-border p-3 text-sm text-muted-foreground">
+        “{product.name}” was deleted.
+      </p>
+    );
+  }
 
   return (
     <article className="rounded-lg border border-border bg-card p-4">
@@ -1108,7 +1307,7 @@ function ProductRow({
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button size="sm" disabled={busy} onClick={() => void saveDetails()}>
               {busy ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save
               details
@@ -1123,6 +1322,15 @@ function ProductRow({
               {outOfStock ? "Mark back in stock" : "Mark out of stock"}
             </Button>
             {status && <span className="text-xs text-muted-foreground">{status}</span>}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => void deleteProduct()}
+              className="ml-auto border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 size={13} /> Delete product
+            </Button>
           </div>
         </div>
       </div>
@@ -1192,7 +1400,9 @@ function BannersPanel({
   };
 
   const move = async (banner: AdminBanner, direction: -1 | 1) => {
-    const sorted = [...banners].sort((a, b) => a.sort_order - b.sort_order);
+    const sorted = [...banners]
+      .filter((b) => (b.category_id ?? null) === (banner.category_id ?? null))
+      .sort((a, b) => a.sort_order - b.sort_order);
     const index = sorted.findIndex((b) => b.id === banner.id);
     const swapWith = sorted[index + direction];
     if (!swapWith) return;
@@ -1218,6 +1428,18 @@ function BannersPanel({
   };
 
   const sorted = useMemo(() => [...banners].sort((a, b) => a.sort_order - b.sort_order), [banners]);
+  // Homepage first, then each category that has banners, in category order.
+  const bannerGroups = useMemo(() => {
+    const groups: Array<{ key: string; label: string; items: AdminBanner[] }> = [
+      { key: "home", label: "Homepage", items: sorted.filter((b) => !b.category_id) },
+      ...categories.map((c) => ({
+        key: c.id,
+        label: `${c.name} page`,
+        items: sorted.filter((b) => b.category_id === c.id),
+      })),
+    ];
+    return groups.filter((g) => g.items.length > 0);
+  }, [sorted, categories]);
 
   return (
     <div className="mt-6">
@@ -1239,17 +1461,24 @@ function BannersPanel({
         </p>
       ) : (
         <div className="mt-5 space-y-4">
-          {sorted.map((banner, index) => (
-            <BannerRow
-              key={banner.id}
-              banner={banner}
-              token={token}
-              categories={categories}
-              isFirst={index === 0}
-              isLast={index === sorted.length - 1}
-              onChanged={load}
-              onMove={(direction) => void move(banner, direction)}
-            />
+          {bannerGroups.map((group) => (
+            <section key={group.key} className="space-y-4">
+              <h3 className="border-b border-border pb-1 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                {group.label} · {group.items.length}
+              </h3>
+              {group.items.map((banner, index) => (
+                <BannerRow
+                  key={banner.id}
+                  banner={banner}
+                  token={token}
+                  categories={categories}
+                  isFirst={index === 0}
+                  isLast={index === group.items.length - 1}
+                  onChanged={load}
+                  onMove={(direction) => void move(banner, direction)}
+                />
+              ))}
+            </section>
           ))}
 
           <label

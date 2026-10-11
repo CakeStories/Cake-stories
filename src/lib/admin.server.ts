@@ -297,6 +297,8 @@ export type AdminProduct = {
   badge: string | null;
   delivery_estimate: string | null;
   tab_group: string | null;
+  /** Character Cakes only: which character tab it appears under (e.g. "Bluey"). */
+  character_tag: string | null;
   active: boolean;
   out_of_stock: boolean;
   variants: AdminVariant[];
@@ -333,7 +335,7 @@ export const adminGetCatalog = createServerFn({ method: "POST" })
         }
       >
     >(
-      `products?select=id,category_id,name,slug,description,image_url,badge,delivery_estimate,tab_group,active,out_of_stock,product_variants(id,size,flavour,price,mrp,active),product_category_links(category_id)${categoryFilter}&order=name.asc`,
+      `products?select=id,category_id,name,slug,description,image_url,badge,delivery_estimate,tab_group,character_tag,active,out_of_stock,product_variants(id,size,flavour,price,mrp,active),product_category_links(category_id)${categoryFilter}&order=name.asc`,
     );
 
     const normalised: AdminProduct[] = products.map((product) => ({
@@ -346,6 +348,7 @@ export const adminGetCatalog = createServerFn({ method: "POST" })
       badge: product.badge,
       delivery_estimate: product.delivery_estimate,
       tab_group: product.tab_group,
+      character_tag: product.character_tag,
       active: product.active,
       out_of_stock: product.out_of_stock,
       crossListedCategoryIds: (product.product_category_links ?? []).map(
@@ -608,6 +611,30 @@ export const adminAddVariant = createServerFn({ method: "POST" })
       },
     });
     return { created: true };
+  });
+
+/**
+ * Permanently deletes a product with its sizes/prices, photos (the database
+ * rows — files stay in Storage) and extra-category links. Past orders keep
+ * their own copy of the name, size, flavour and price; only their link back
+ * to this product is cleared.
+ */
+export const adminDeleteProduct = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z.object({ token: z.string(), productId: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data }) => {
+    await assertValidToken(data.token);
+    const id = data.productId;
+    await adminRest(`order_items?product_id=eq.${id}`, { method: "PATCH", body: { product_id: null } });
+    await Promise.all([
+      adminRest(`product_variants?product_id=eq.${id}`, { method: "DELETE" }),
+      adminRest(`product_images?product_id=eq.${id}`, { method: "DELETE" }),
+      adminRest(`product_category_links?product_id=eq.${id}`, { method: "DELETE" }),
+    ]);
+    const deleted = await adminRest<Array<{ id: string }>>(`products?id=eq.${id}`, { method: "DELETE" });
+    if (!deleted?.length) throw new Error("That product was already deleted.");
+    return { deleted: true };
   });
 
 export const adminDeleteVariant = createServerFn({ method: "POST" })
