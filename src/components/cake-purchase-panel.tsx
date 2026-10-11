@@ -19,6 +19,7 @@ import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { CAKE_MESSAGE_MAX, INSTRUCTIONS_MAX, type CartItemRef } from "@/lib/pricing";
 import type { PartyEssentialItem } from "@/lib/party-essentials";
 import { cakeEnquiryLink } from "@/lib/whatsapp";
+import { resizedImageUrl } from "@/lib/supabase";
 
 export function CakePurchasePanel({
   slug,
@@ -329,7 +330,7 @@ export function CakePurchasePanel({
                   <Link to="/product/$productSlug" params={{ productSlug: item.slug }} className="mb-1.5 block">
                     <div className="aspect-square overflow-hidden rounded bg-muted">
                       <img
-                        src={item.image}
+                        src={resizedImageUrl(item.image, 192)}
                         alt={item.name}
                         loading="lazy"
                         className="h-full w-full object-cover"

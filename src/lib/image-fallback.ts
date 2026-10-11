@@ -19,5 +19,7 @@ export function onProductImageError(event: SyntheticEvent<HTMLImageElement>) {
   const img = event.currentTarget;
   // getAttribute, not .src — .src is the resolved absolute URL, which never equals the relative path.
   if (img.getAttribute("src") === DEFAULT_PRODUCT_IMAGE) return;
+  // Drop any srcset too — otherwise the browser keeps showing the failed one.
+  img.removeAttribute("srcset");
   img.src = DEFAULT_PRODUCT_IMAGE;
 }

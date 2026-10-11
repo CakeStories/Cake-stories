@@ -19,7 +19,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/button";
-import { proxiedImageUrl } from "@/lib/supabase";
+import { resizedImageUrl } from "@/lib/supabase";
 import {
   adminAddCategoryLink,
   adminAddVariant,
@@ -895,7 +895,7 @@ function ProductRow({
           <div className="relative aspect-square overflow-hidden rounded-md bg-muted">
             {product.image_url ? (
               <img
-                src={proxiedImageUrl(product.image_url)}
+                src={resizedImageUrl(product.image_url, 240)}
                 alt={product.name}
                 className={`h-full w-full object-cover ${outOfStock ? "opacity-50" : ""}`}
               />
@@ -1369,7 +1369,7 @@ function BannerRow({
       <div className="grid gap-4 sm:grid-cols-[200px_minmax(0,1fr)]">
         <div>
           <div className="aspect-[5/2] overflow-hidden rounded-md bg-muted">
-            <img src={proxiedImageUrl(banner.image_url)} alt="" className="h-full w-full object-cover" />
+            <img src={resizedImageUrl(banner.image_url, 480)} alt="" className="h-full w-full object-cover" />
           </div>
           <label className="mt-2 flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-input px-2 py-1.5 text-xs font-medium hover:bg-muted">
             <ImageUp size={13} />
@@ -2232,7 +2232,7 @@ function AddonRow({
     <div className="flex flex-wrap items-center gap-3 rounded-md border border-border p-3">
       <div className="size-12 shrink-0 overflow-hidden rounded-md bg-muted">
         {addon.image_url ? (
-          <img src={proxiedImageUrl(addon.image_url)} alt={addon.name} className="h-full w-full object-cover" />
+          <img src={resizedImageUrl(addon.image_url, 240)} alt={addon.name} className="h-full w-full object-cover" />
         ) : (
           <div className="grid h-full place-items-center text-lg">🕯️</div>
         )}

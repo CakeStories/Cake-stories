@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { Banner } from "@/lib/banners";
+import { resizedImageUrl } from "@/lib/supabase";
 
 function BannerImage({
   banner,
@@ -18,7 +19,7 @@ function BannerImage({
       aria-label={banner.label}
       className={`block overflow-hidden rounded-lg ${className}`}
     >
-      <img src={banner.image} alt="" loading="lazy" className={imageClassName} />
+      <img src={resizedImageUrl(banner.image, 1280, 75)} alt="" loading="lazy" className={imageClassName} />
     </a>
   ) : (
     <Link
@@ -26,7 +27,7 @@ function BannerImage({
       aria-label={banner.label}
       className={`block overflow-hidden rounded-lg ${className}`}
     >
-      <img src={banner.image} alt="" loading="lazy" className={imageClassName} />
+      <img src={resizedImageUrl(banner.image, 1280, 75)} alt="" loading="lazy" className={imageClassName} />
     </Link>
   );
 }

@@ -3,6 +3,7 @@ import { Clock3, Sparkles } from "lucide-react";
 import { PriceTag } from "@/components/price-tag";
 import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { onProductImageError } from "@/lib/image-fallback";
+import { responsiveImage } from "@/lib/supabase";
 
 export function CakeCard({
   href,
@@ -61,7 +62,7 @@ export function CakeCard({
     >
       <div className="relative aspect-square overflow-hidden bg-muted">
         <img
-          src={image}
+          {...responsiveImage(image, 320, "(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw")}
           alt={title}
           loading="lazy"
           onError={onProductImageError}

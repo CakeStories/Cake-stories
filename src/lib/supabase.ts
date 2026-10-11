@@ -32,6 +32,37 @@ export function proxiedImageUrl(url: string): string {
   return url.replace(SUPABASE_STORAGE_PREFIX, "/sb/storage/");
 }
 
+const PUBLIC_OBJECT_PATH = "/sb/storage/v1/object/public/";
+
+/**
+ * A Supabase Storage photo resized on the fly to `width` px and served as
+ * WebP/AVIF (Supabase Image Transformations), through the /sb proxy. Product
+ * photos are stored at full size — up to 2 MB — so showing them unresized in
+ * a 200 px card wastes megabytes. Other URLs (bundled assets, /public files)
+ * are returned unchanged.
+ */
+export function resizedImageUrl(url: string, width: number, quality = 70): string {
+  const proxied = proxiedImageUrl(url);
+  if (!proxied.startsWith(PUBLIC_OBJECT_PATH)) return url;
+  const path = proxied.slice(PUBLIC_OBJECT_PATH.length).split("?")[0];
+  return `/sb/storage/v1/render/image/public/${path}?width=${width}&quality=${quality}`;
+}
+
+/**
+ * `src`/`srcSet`/`sizes` for an <img>: the photo at its displayed width and
+ * at 2x for sharp phone screens; the browser downloads only the one it needs.
+ * `sizes` describes the rendered width (e.g. "(min-width: 1024px) 20vw, 50vw").
+ */
+export function responsiveImage(url: string, width: number, sizes: string) {
+  const src = resizedImageUrl(url, width);
+  if (src === url) return { src };
+  return {
+    src,
+    srcSet: `${src} ${width}w, ${resizedImageUrl(url, width * 2)} ${width * 2}w`,
+    sizes,
+  };
+}
+
 /** Applies proxiedImageUrl to every string in fetched rows, including nested ones. */
 function proxyStorageUrls<T>(value: T): T {
   if (typeof value === "string") return proxiedImageUrl(value) as T;

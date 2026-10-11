@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
-import { categories as staticCategories } from "@/lib/catalog";
+import { categories as staticCategories } from "@/lib/static-categories";
 import { getCategories } from "@/lib/categories";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";

@@ -6,6 +6,7 @@ import { cakeEnquiryLink } from "@/lib/whatsapp";
 import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { onProductImageError } from "@/lib/image-fallback";
 import type { GenericCake } from "@/lib/generic-cakes";
+import { responsiveImage } from "@/lib/supabase";
 
 /**
  * One Birthday Bash cake, shown in full rather than linking to its own page —
@@ -49,7 +50,7 @@ export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
         className={`relative overflow-hidden rounded-lg bg-muted ${keepSquareImage ? "" : "sm:h-full"}`}
       >
         <img
-          src={cake.image}
+          {...responsiveImage(cake.image, 640, "(min-width: 640px) 50vw, 100vw")}
           alt={cake.name}
           onError={onProductImageError}
           // In-flow square on phones (iOS Safari collapses an aspect-ratio box that only

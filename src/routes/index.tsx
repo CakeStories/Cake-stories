@@ -13,6 +13,7 @@ import { flavours } from "@/lib/flavour-list";
 import bannerClassics from "@/assets/cake-stories-classics.jpg";
 import bannerDesigner from "@/assets/cake-stories-designer.jpg";
 import bannerCustomize from "@/assets/cake-stories-customize.jpg";
+import { resizedImageUrl } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -65,6 +66,13 @@ function flavourImageCandidates(label: string, slug: string) {
   ]);
 }
 
+/** Hero banner widths for every screen, from phones to large desktops. */
+function heroSrcSet(image: string): string | undefined {
+  const at = (w: number) => resizedImageUrl(image, w, 75);
+  if (at(640) === image) return undefined; // not a Supabase photo (bundled artwork)
+  return [640, 1280, 1920].map((w) => `${at(w)} ${w}w`).join(", ");
+}
+
 function FlavourThumbnail({ label, slug }: { label: string; slug: string }) {
   const candidates = flavourImageCandidates(label, slug);
   const [index, setIndex] = useState(0);
@@ -72,7 +80,7 @@ function FlavourThumbnail({ label, slug }: { label: string; slug: string }) {
 
   return (
     <img
-      src={src}
+      src={src && resizedImageUrl(src, 256)}
       alt={label}
       loading="lazy"
       className="h-full w-full object-cover transition duration-300 hover:scale-105"
@@ -214,7 +222,9 @@ function CakeStore() {
                 className={`absolute inset-0 transition-opacity duration-700 ${index === bannerIndex ? "opacity-100" : "pointer-events-none opacity-0"}`}
               >
                 <img
-                  src={banner.image}
+                  src={resizedImageUrl(banner.image, 1280, 75)}
+                  srcSet={heroSrcSet(banner.image)}
+                  sizes="(min-width: 1280px) 1280px, 100vw"
                   width={1600}
                   height={533}
                   alt=""
@@ -233,7 +243,9 @@ function CakeStore() {
                 className={`absolute inset-0 transition-opacity duration-700 ${index === bannerIndex ? "opacity-100" : "pointer-events-none opacity-0"}`}
               >
                 <img
-                  src={banner.image}
+                  src={resizedImageUrl(banner.image, 1280, 75)}
+                  srcSet={heroSrcSet(banner.image)}
+                  sizes="(min-width: 1280px) 1280px, 100vw"
                   width={1600}
                   height={533}
                   alt=""
@@ -334,7 +346,7 @@ function CakeStore() {
                 >
                   {/* The photo, blurred, fills the whole tile as a backdrop in its own colours… */}
                   <img
-                    src={occasion.image}
+                    src={resizedImageUrl(occasion.image, 48, 40)}
                     alt=""
                     aria-hidden="true"
                     loading="lazy"
@@ -343,7 +355,7 @@ function CakeStore() {
                   <span aria-hidden="true" className="absolute inset-0 bg-white/45" />
                   {/* …and the sharp photo sits on the right, fading into it, so the cake isn't under the text. */}
                   <img
-                    src={occasion.image}
+                    src={resizedImageUrl(occasion.image, 480)}
                     alt=""
                     loading="lazy"
                     className="absolute inset-y-0 right-0 h-full w-[62%] object-cover object-[center_60%] transition duration-500 [mask-image:linear-gradient(to_right,transparent,black_35%)] group-hover:scale-105"

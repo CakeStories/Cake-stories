@@ -6,6 +6,7 @@ import { CakePurchasePanel } from "@/components/cake-purchase-panel";
 import { getKidsCakes } from "@/lib/kids-cakes";
 import { getPartyEssentials } from "@/lib/party-essentials";
 import { onProductImageError } from "@/lib/image-fallback";
+import { responsiveImage } from "@/lib/supabase";
 
 export const Route = createFileRoute("/kids-cake/$slug")({
   loader: async ({ params }) => {
@@ -60,7 +61,7 @@ function KidsCakePage() {
           {/* A plain in-flow square image: iOS Safari collapsed the old aspect-ratio box (holding only an absolutely positioned image) to 0x0. */}
           <div className="overflow-hidden rounded-lg bg-muted sm:sticky sm:top-24 sm:self-start">
             <img
-              src={cake.image}
+              {...responsiveImage(cake.image, 640, "(min-width: 640px) 50vw, 100vw")}
               alt={cake.name}
               onError={onProductImageError}
               className="block aspect-square w-full object-cover sm:object-contain"

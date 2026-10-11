@@ -5,6 +5,7 @@ import { Button } from "@/components/button";
 import { getAddons, groupAddonsByCategory, type Addon } from "@/lib/addons";
 import { cartLineId, useCart } from "@/lib/cart";
 import type { CartItemRef } from "@/lib/pricing";
+import { resizedImageUrl } from "@/lib/supabase";
 
 export function ExtraSpecialDialog({
   open,
@@ -96,7 +97,7 @@ export function ExtraSpecialDialog({
                     <div className="aspect-square overflow-hidden rounded-md bg-muted">
                       {addon.image ? (
                         <img
-                          src={addon.image}
+                          src={resizedImageUrl(addon.image, 240)}
                           alt={addon.name}
                           className="h-full w-full object-cover"
                         />

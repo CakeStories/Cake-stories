@@ -8,6 +8,7 @@ import { getCategories, basePathForCategorySlug } from "@/lib/categories";
 import { getCakeBySlugAnywhere, getCakesForCategory } from "@/lib/generic-cakes";
 import { getPartyEssentials } from "@/lib/party-essentials";
 import { onProductImageError } from "@/lib/image-fallback";
+import { responsiveImage } from "@/lib/supabase";
 
 export const Route = createFileRoute("/product/$productSlug")({
   loader: async ({ params }) => {
@@ -117,7 +118,7 @@ function ProductPage() {
           {/* A plain in-flow square image: iOS Safari collapsed the old aspect-ratio box (holding only an absolutely positioned image) to 0x0. */}
           <div className="overflow-hidden rounded-lg bg-muted sm:sticky sm:top-24 sm:self-start">
             <img
-              src={image}
+              {...responsiveImage(image, 640, "(min-width: 640px) 50vw, 100vw")}
               alt={title}
               onError={onProductImageError}
               className={`block aspect-square w-full object-cover ${categorySlug === "birthday-bash" ? "" : "sm:object-contain"}`}

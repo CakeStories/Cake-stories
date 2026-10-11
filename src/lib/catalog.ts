@@ -1,31 +1,18 @@
-import bentoAsset from "@/assets/cake-bento.jpg.asset.json";
-import vanillaAsset from "@/assets/cake-vanilla.jpg.asset.json";
-import cheesecakeAsset from "@/assets/cake-cheesecake.jpg.asset.json";
-import tresLechesAsset from "@/assets/cake-tres-leches.jpg.asset.json";
-import tiramisuAsset from "@/assets/cake-tiramisu.jpg.asset.json";
-import dryCakeAsset from "@/assets/cake-dry-cake.jpg.asset.json";
-import salankatiaAsset from "@/assets/cake-salankatia.jpg.asset.json";
-import photoCakeAsset from "@/assets/cake-photo-cake.jpg.asset.json";
-import cupcakeAsset from "@/assets/cake-cupcake.jpg.asset.json";
-import jarCakeAsset from "@/assets/cake-jar-cake.jpg.asset.json";
-import oreoAsset from "@/assets/cake-oreo.jpg.asset.json";
-import pinataAsset from "@/assets/cake-pinata.jpg.asset.json";
+import bentoAsset from "@/assets/catalog/cake-bento.jpg";
+import vanillaAsset from "@/assets/catalog/cake-vanilla.jpg";
+import cheesecakeAsset from "@/assets/catalog/cake-cheesecake.jpg";
+import tresLechesAsset from "@/assets/catalog/cake-tres-leches.jpg";
+import tiramisuAsset from "@/assets/catalog/cake-tiramisu.jpg";
+import dryCakeAsset from "@/assets/catalog/cake-dry-cake.jpg";
+import salankatiaAsset from "@/assets/catalog/cake-salankatia.jpg";
+import photoCakeAsset from "@/assets/catalog/cake-photo-cake.jpg";
+import cupcakeAsset from "@/assets/catalog/cake-cupcake.jpg";
+import jarCakeAsset from "@/assets/catalog/cake-jar-cake.jpg";
+import oreoAsset from "@/assets/catalog/cake-oreo.jpg";
+import pinataAsset from "@/assets/catalog/cake-pinata.jpg";
 
-export type Category = {
-  slug: string;
-  label: string;
-};
-
-export const categories: Category[] = [
-  { slug: "birthday-cakes", label: "Birthday Cakes" },
-  { slug: "wedding-cakes", label: "Wedding Cakes" },
-  { slug: "kids-cakes", label: "Kids Cakes" },
-  { slug: "holy-communion-cakes", label: "Holy Communion" },
-  { slug: "birthday-bash", label: "Birthday Bash" },
-  { slug: "party-essentials", label: "Party Essentials" },
-  { slug: "anniversary-cakes", label: "Anniversary" },
-  { slug: "new-arrivals", label: "New Arrivals" },
-];
+import { categories, type Category } from "@/lib/static-categories";
+export { categories, type Category };
 
 export type Product = {
   id: string;
@@ -51,7 +38,7 @@ export const products: Product[] = [
     name: "White Forest Cake",
     category: "holy-communion-cakes",
     price: 899,
-    image: vanillaAsset.url,
+    image: vanillaAsset,
     description:
       "A lighter twist on the classic — white chocolate shavings and whipped cream, in the soft white palette fitting for a Holy Communion table.",
     weight: "1 kg",
@@ -64,7 +51,7 @@ export const products: Product[] = [
     name: "Bento Cake",
     category: "party-essentials",
     price: 549,
-    image: bentoAsset.url,
+    image: bentoAsset,
     description:
       "A cute, individually-sized 4-inch cake in a box — perfect for a small celebration.",
     weight: "250 g",
@@ -76,7 +63,7 @@ export const products: Product[] = [
     name: "Vanilla Cake",
     category: "holy-communion-cakes",
     price: 649,
-    image: vanillaAsset.url,
+    image: vanillaAsset,
     description: "A timeless vanilla sponge with light whipped cream — simple and elegant.",
     weight: "1 kg",
     classicToCreative: true,
@@ -87,7 +74,7 @@ export const products: Product[] = [
     name: "Cheese Cake",
     category: "party-essentials",
     price: 899,
-    image: cheesecakeAsset.url,
+    image: cheesecakeAsset,
     description: "A baked, creamy cheesecake with a buttery biscuit base.",
     weight: "750 g",
     classicToCreative: true,
@@ -98,7 +85,7 @@ export const products: Product[] = [
     name: "Tres Leches",
     category: "party-essentials",
     price: 799,
-    image: tresLechesAsset.url,
+    image: tresLechesAsset,
     description: "A soft milk-soaked sponge cake, finished with a light whipped topping.",
     weight: "1 kg",
     classicToCreative: true,
@@ -109,7 +96,7 @@ export const products: Product[] = [
     name: "Tiramisu Cake",
     category: "party-essentials",
     price: 899,
-    image: tiramisuAsset.url,
+    image: tiramisuAsset,
     description: "Coffee-soaked layers with mascarpone cream and a dusting of cocoa.",
     weight: "750 g",
     classicToCreative: true,
@@ -120,7 +107,7 @@ export const products: Product[] = [
     name: "Dry Cake",
     category: "party-essentials",
     price: 499,
-    image: dryCakeAsset.url,
+    image: dryCakeAsset,
     description: "An eggless butter sponge loaf, lightly sweet and perfect with chai.",
     weight: "500 g",
     classicToCreative: true,
@@ -131,7 +118,7 @@ export const products: Product[] = [
     name: "Salankatia",
     category: "party-essentials",
     price: 749,
-    image: salankatiaAsset.url,
+    image: salankatiaAsset,
     description: "A regional specialty cake, layered with a delicately spiced cream.",
     weight: "750 g",
     classicToCreative: true,
@@ -142,7 +129,7 @@ export const products: Product[] = [
     name: "Photo Cake",
     category: "birthday-cakes",
     price: 999,
-    image: photoCakeAsset.url,
+    image: photoCakeAsset,
     description: "A vanilla or chocolate cake topped with an edible print of your favourite photo.",
     weight: "1 kg",
     classicToCreative: true,
@@ -153,7 +140,7 @@ export const products: Product[] = [
     name: "Cupcake",
     category: "kids-cakes",
     price: 399,
-    image: cupcakeAsset.url,
+    image: cupcakeAsset,
     description: "A box of 6 freshly baked cupcakes with swirled buttercream.",
     weight: "6 pieces",
     classicToCreative: true,
@@ -164,7 +151,7 @@ export const products: Product[] = [
     name: "Oreo Cake",
     category: "kids-cakes",
     price: 749,
-    image: oreoAsset.url,
+    image: oreoAsset,
     description: "Chocolate sponge loaded with crushed Oreo cookies and cream.",
     weight: "1 kg",
     classicToCreative: true,
@@ -175,7 +162,7 @@ export const products: Product[] = [
     name: "Pinata Cake",
     category: "kids-cakes",
     price: 1099,
-    image: pinataAsset.url,
+    image: pinataAsset,
     description:
       "A hollow chocolate shell cake filled with candy — break it open to reveal the surprise inside.",
     weight: "1.5 kg",
@@ -187,7 +174,7 @@ export const products: Product[] = [
     name: "Jar Cake",
     category: "party-essentials",
     price: 349,
-    image: jarCakeAsset.url,
+    image: jarCakeAsset,
     description: "Layered cake and cream served in a reusable jar — easy to share, easy to gift.",
     weight: "200 g",
     classicToCreative: true,

@@ -24,7 +24,19 @@ export default defineConfig({
     // Builds: a nitro route rule (on Vercel this becomes an edge rewrite). The
     // Lovable config's types only list a few nitro options, but it passes every
     // option through to nitro at runtime — hence the cast.
-    nitro: { routeRules: { "/sb/**": { proxy: `${supabaseUrl}/**` } } } as { preset?: string },
+    nitro: {
+      routeRules: {
+        // Resized photos rarely change: let Vercel's CDN keep them for 30 days
+        // (each size is transformed by Supabase only once) and browsers for 7.
+        "/sb/storage/v1/render/**": {
+          proxy: `${supabaseUrl}/storage/v1/render/**`,
+          headers: {
+            "cache-control": "public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400",
+          },
+        },
+        "/sb/**": { proxy: `${supabaseUrl}/**` },
+      },
+    } as { preset?: string },
     // `vite dev`: the same forwarding via Vite's dev-server proxy.
     vite: {
       server: {

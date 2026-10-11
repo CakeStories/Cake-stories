@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { LoopingRail } from "@/components/looping-rail";
 import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { onProductImageError } from "@/lib/image-fallback";
+import { responsiveImage } from "@/lib/supabase";
 
 export type TabbedCake = {
   id: string;
@@ -52,7 +53,7 @@ function RailCard({ cake, duplicate = false }: { cake: TabbedCake; duplicate?: b
     >
       <div className="relative aspect-square overflow-hidden bg-muted">
         <img
-          src={cake.image}
+          {...responsiveImage(cake.image, 240, "220px")}
           alt={cake.title}
           loading="lazy"
           onError={onProductImageError}
