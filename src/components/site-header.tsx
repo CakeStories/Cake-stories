@@ -20,7 +20,7 @@ import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/lib/auth";
 import { useStoreSettings } from "@/lib/store-settings";
-import { BRANCH_LOCATIONS, useDeliveryLocation } from "@/lib/delivery-location";
+import { BRANCH_LOCATIONS, isPickupLocation, useDeliveryLocation } from "@/lib/delivery-location";
 import { flavours } from "@/lib/flavour-list";
 import {
   addRecentSearch,
@@ -167,6 +167,8 @@ function SearchDropdown({
 function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) {
   const { location, setBranch, setByPincode } = useDeliveryLocation();
   const [open, setOpen] = useState(false);
+  // "Pickup from Anducode" when a shop was chosen, "Delivering to …" for a pincode.
+  const prefix = isPickupLocation(location) ? "Pickup from" : "Delivering to";
   const [pincode, setPincode] = useState("");
   const [status, setStatus] = useState<{
     loading: boolean;
@@ -203,7 +205,7 @@ function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) 
           >
             <MapPin size={18} className="text-primary" />
             <span>
-              <span className="block text-muted-foreground">Delivering to</span>
+              <span className="block text-muted-foreground">{prefix}</span>
               <strong className="flex items-center gap-1">
                 {location.label} <ChevronDown size={13} />
               </strong>
@@ -212,7 +214,7 @@ function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) 
         ) : (
           <button type="button" className="flex w-full items-center gap-1.5 text-left text-xs">
             <MapPin size={15} className="shrink-0 text-primary" />
-            <span className="text-muted-foreground">Delivering to</span>
+            <span className="text-muted-foreground">{prefix}</span>
             <strong className="min-w-0 truncate">{location.label}</strong>
             <ChevronDown size={13} className="shrink-0" />
           </button>

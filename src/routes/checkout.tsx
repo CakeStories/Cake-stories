@@ -19,7 +19,7 @@ import {
   isSameDayStillBookable,
   timeSlotIndexForHour,
 } from "@/lib/pricing";
-import { readSavedDeliveryLocation } from "@/lib/delivery-location";
+import { pickupBranchFor, readSavedDeliveryLocation } from "@/lib/delivery-location";
 import { CheckoutInfoAccordion } from "@/components/checkout-info-accordion";
 import { DEFAULT_PRODUCT_IMAGE, onProductImageError } from "@/lib/image-fallback";
 import { resizedImageUrl } from "@/lib/supabase";
@@ -109,6 +109,12 @@ function CheckoutPage() {
 
   useEffect(() => {
     const saved = readSavedDeliveryLocation();
+    // Chose "Pickup from <shop>" in the header? Start checkout on pickup there.
+    const shopBranch = saved ? pickupBranchFor(saved) : undefined;
+    if (shopBranch) {
+      setForm((f) => ({ ...f, fulfillmentType: "pickup", pickupBranch: shopBranch }));
+      return;
+    }
     if (saved?.pincode) {
       setForm((f) => ({
         ...f,
@@ -266,7 +272,7 @@ function CheckoutPage() {
       return;
     }
     if (zone && !zone.ok) {
-      setError(zone.message);
+      setError("Not delivering to this location");
       return;
     }
     if (coupon?.status === "invalid") {
@@ -533,17 +539,31 @@ function CheckoutPage() {
                       autoComplete="postal-code"
                     />
                   </div>
-                  {zone && zoneChecked && (
-                    <p
-                      role="status"
-                      className={`text-xs font-medium ${zone.ok ? "text-success" : "text-destructive"}`}
-                    >
-                      {zone.ok
-                        ? zone.via === "map" && zone.km != null
-                          ? `✓ We deliver here — about ${zone.km} km from Marthandam.`
-                          : "✓ We deliver cakes to this pincode."
-                        : zone.message}
+                  {zone && zoneChecked && zone.ok && (
+                    <p role="status" className="text-xs font-medium text-success">
+                      {zone.via === "map" && zone.km != null
+                        ? `✓ We deliver here — about ${zone.km} km from Marthandam.`
+                        : "✓ We deliver cakes to this pincode."}
                     </p>
+                  )}
+                  {zone && zoneChecked && !zone.ok && (
+                    <div
+                      role="alert"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2"
+                    >
+                      <p className="text-sm font-semibold text-destructive">Not delivering to this location</p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setError(null);
+                          setForm((f) => ({ ...f, fulfillmentType: "pickup" }));
+                        }}
+                      >
+                        Choose store pickup
+                      </Button>
+                    </div>
                   )}
                   {quote && !hasCake && (
                     <p className="text-xs text-muted-foreground">

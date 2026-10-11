@@ -10,6 +10,7 @@ export const BRANCH_LOCATIONS = [
   {
     id: "anducode",
     label: "Anducode",
+    pickupBranch: "Arumanai Main Road, Anducode", // its name in checkout's pickup list
     address: "Post Office Jn, Melpuram Arumanai Road",
     phone: "+91 89030 18447",
     mapsUrl: "https://share.google/tnwKStx0Ccg18KDul",
@@ -24,6 +25,7 @@ export const BRANCH_LOCATIONS = [
   {
     id: "marthandam",
     label: "North Street, Marthandam",
+    pickupBranch: "North Street, Marthandam",
     address: "Near Good Shepherd School, North Street",
     phone: "+91 96330 20980",
     mapsUrl: "https://share.google/Mm441BndGDFrD7hUE",
@@ -31,6 +33,22 @@ export const BRANCH_LOCATIONS = [
 ];
 
 const STORAGE_KEY = "cake-stories:location";
+
+/** Shown until the customer picks an area or a shop. */
+const NO_LOCATION: DeliveryLocation = { id: "none", label: "Choose your area" };
+
+/** True when the customer chose to pick up from one of our shops (rather than a delivery pincode). */
+export function isPickupLocation(location: { id: string }): boolean {
+  return BRANCH_LOCATIONS.some((shop) => shop.id === location.id);
+}
+
+/** The checkout pickup-branch name for a shop chosen in the header, if that shop offers pickup. */
+export function pickupBranchFor(location: { id: string }): string | undefined {
+  const shop: { id: string; pickupBranch?: string } | undefined = BRANCH_LOCATIONS.find(
+    (b) => b.id === location.id,
+  );
+  return shop?.pickupBranch;
+}
 
 export type DeliveryLocation = {
   id: string;
@@ -57,7 +75,7 @@ export function readSavedDeliveryLocation(): DeliveryLocation | null {
 }
 
 export function useDeliveryLocation() {
-  const [location, setLocationState] = useState<DeliveryLocation>(BRANCH_LOCATIONS[0]!);
+  const [location, setLocationState] = useState<DeliveryLocation>(NO_LOCATION);
 
   useEffect(() => {
     const saved = readSavedDeliveryLocation();
