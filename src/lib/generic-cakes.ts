@@ -156,7 +156,24 @@ export type CharacterCakeGroup = {
 };
 
 
-const nameKey = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+/** "Chase & Friends  Bash" and "Chase and Friends Bash" give the same key. */
+const nameKey = (name: string) =>
+  name.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]/g, "");
+
+/**
+ * The Kids Cakes design for a character cake: the same name, or failing that
+ * a Kids Cakes name that is the start of it ("Adventure Bay" for "Adventure
+ * Bay Celebration"). Short names are skipped so "Bluey" can't match every Bluey cake.
+ */
+function findKidsTwin<T>(byName: Map<string, T>, name: string): T | undefined {
+  const key = nameKey(name);
+  const exact = byName.get(key);
+  if (exact) return exact;
+  for (const [kidsKey, value] of byName) {
+    if (kidsKey.length >= 10 && key.startsWith(kidsKey)) return value;
+  }
+  return undefined;
+}
 
 type KidsPriceRow = {
   name: string;
@@ -247,7 +264,7 @@ export async function getCharacterCakes(categoryId: string): Promise<CharacterCa
     const tag = p.character_tag?.trim();
     if (!tag) continue;
     const own = toGenericCake(p, variantsByProduct.get(p.id) ?? [], imageByProduct.get(p.id));
-    const kids = own.minPrice > 0 ? undefined : kidsPrices.get(nameKey(own.name));
+    const kids = own.minPrice > 0 ? undefined : findKidsTwin(kidsPrices, own.name);
     const cake: CharacterCake = kids
       ? {
           ...own,
@@ -256,6 +273,9 @@ export async function getCharacterCakes(categoryId: string): Promise<CharacterCa
           href: `/kids-cake/${kids.slug}`,
         }
       : { ...own, href: `/product/${own.slug}` };
+    // No price of its own and no priced Kids Cakes twin: keep it out of the
+    // character rails until a price is set in /manage (no "Price on request").
+    if (cake.minPrice <= 0) continue;
     const list = groups.get(tag) ?? [];
     list.push(cake);
     groups.set(tag, list);

@@ -332,16 +332,21 @@ function CakeStore() {
                   params={{ categorySlug: occasion.category }}
                   className="group relative aspect-[2.15/1] w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-[#f6e9da] shadow-sm sm:w-[380px]"
                 >
+                  {/* The photo, blurred, fills the whole tile as a backdrop in its own colours… */}
+                  <img
+                    src={occasion.image}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full scale-125 object-cover blur-2xl"
+                  />
+                  <span aria-hidden="true" className="absolute inset-0 bg-white/45" />
+                  {/* …and the sharp photo sits on the right, fading into it, so the cake isn't under the text. */}
                   <img
                     src={occasion.image}
                     alt=""
                     loading="lazy"
-                    className="absolute inset-y-0 right-0 h-full w-[62%] object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  {/* Soft fade from the text side into the photo, so the banner reads as one image. */}
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-0 bg-gradient-to-r from-[#f6e9da] from-[38%] via-[#f6e9da]/60 via-[50%] to-transparent to-[66%]"
+                    className="absolute inset-y-0 right-0 h-full w-[62%] object-cover object-[center_60%] transition duration-500 [mask-image:linear-gradient(to_right,transparent,black_35%)] group-hover:scale-105"
                   />
                   <div className="relative z-10 flex h-full max-w-[56%] flex-col p-4 sm:p-5">
                     <h3 className="text-lg font-extrabold leading-tight text-primary sm:text-xl">
