@@ -47,7 +47,9 @@ export function SiteFooter() {
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <img
-                src="/cake-stories-logo.webp"
+                src="/cake-stories-logo-sm.webp"
+                width={300}
+                height={146}
                 alt="Cake Stories"
                 className="h-10 w-auto brightness-0 invert"
               />

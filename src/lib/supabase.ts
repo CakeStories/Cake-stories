@@ -49,16 +49,18 @@ export function resizedImageUrl(url: string, width: number, quality = 70): strin
 }
 
 /**
- * `src`/`srcSet`/`sizes` for an <img>: the photo at its displayed width and
- * at 2x for sharp phone screens; the browser downloads only the one it needs.
- * `sizes` describes the rendered width (e.g. "(min-width: 1024px) 20vw, 50vw").
+ * `src`/`srcSet`/`sizes` for an <img>: the photo at several widths around
+ * its displayed size (up to 2x for sharp phone screens); the browser
+ * downloads only the one that fits. `sizes` describes the rendered width
+ * (e.g. "(min-width: 1024px) 20vw, 50vw").
  */
 export function responsiveImage(url: string, width: number, sizes: string) {
   const src = resizedImageUrl(url, width);
   if (src === url) return { src };
+  const widths = [0.75, 1, 1.5, 2].map((f) => Math.round((width * f) / 20) * 20);
   return {
     src,
-    srcSet: `${src} ${width}w, ${resizedImageUrl(url, width * 2)} ${width * 2}w`,
+    srcSet: widths.map((w) => `${resizedImageUrl(url, w)} ${w}w`).join(", "),
     sizes,
   };
 }

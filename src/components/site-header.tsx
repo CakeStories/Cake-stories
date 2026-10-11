@@ -169,7 +169,13 @@ function SearchDropdown({
 export function Logo() {
   return (
     <Link to="/" className="flex items-center" aria-label="Cake Stories home">
-      <img src="/cake-stories-logo.webp" alt="Cake Stories" className="h-9 w-auto sm:h-11" />
+      <img
+        src="/cake-stories-logo-sm.webp"
+        alt="Cake Stories"
+        width={300}
+        height={146}
+        className="h-9 w-auto sm:h-11"
+      />
     </Link>
   );
 }

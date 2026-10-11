@@ -101,7 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       // Poppins is self-hosted via @fontsource (see styles.css).
       // Leaflet's stylesheet is loaded on demand by the map picker, not on every page.
-      { rel: "icon", href: "/cake-stories-logo.webp", type: "image/webp" },
+      { rel: "icon", href: "/cake-stories-logo-sm.webp", type: "image/webp" },
     ],
   }),
   shellComponent: RootShell,

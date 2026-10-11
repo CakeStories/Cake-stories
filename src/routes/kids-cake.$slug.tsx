@@ -62,6 +62,7 @@ function KidsCakePage() {
           <div className="overflow-hidden rounded-lg bg-muted sm:sticky sm:top-24 sm:self-start">
             <img
               {...responsiveImage(cake.image, 640, "(min-width: 640px) 50vw, 100vw")}
+              fetchPriority="high"
               alt={cake.name}
               onError={onProductImageError}
               className="block aspect-square w-full object-cover sm:object-contain"

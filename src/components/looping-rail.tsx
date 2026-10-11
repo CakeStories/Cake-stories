@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /** Enough cards that the row is always full and has room to loop in both directions. */
-const MIN_RENDERED_ITEMS = 30;
+const MIN_RENDERED_ITEMS = 16;
 
 /**
  * A horizontal rail that repeats its items so it never ends half-empty (three

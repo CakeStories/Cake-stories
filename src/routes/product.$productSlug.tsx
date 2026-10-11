@@ -119,6 +119,7 @@ function ProductPage() {
           <div className="overflow-hidden rounded-lg bg-muted sm:sticky sm:top-24 sm:self-start">
             <img
               {...responsiveImage(image, 640, "(min-width: 640px) 50vw, 100vw")}
+              fetchPriority="high"
               alt={title}
               onError={onProductImageError}
               className={`block aspect-square w-full object-cover ${categorySlug === "birthday-bash" ? "" : "sm:object-contain"}`}
