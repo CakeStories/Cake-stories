@@ -566,6 +566,7 @@ function CakeStore() {
                       {...(cake.minPriceMrp != null && { minPriceMrp: cake.minPriceMrp })}
                       deliveryEstimate={cake.deliveryEstimate}
                       outOfStock={cake.outOfStock}
+                      enquiry
                       {...(duplicate && { tabIndex: -1 })}
                       imageSizes="(min-width: 640px) 208px, 176px"
                     />

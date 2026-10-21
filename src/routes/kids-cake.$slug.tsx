@@ -27,7 +27,7 @@ export const Route = createFileRoute("/kids-cake/$slug")({
             name: "description",
             content:
               loaderData.cake.description ??
-              `Order the ${loaderData.cake.name} online from Cake Stories, from ₹${loaderData.cake.minPrice}.`,
+              `Customise the ${loaderData.cake.name} from Cake Stories — choose your flavour and size, then enquire on WhatsApp.`,
           },
         ]
       : [],
@@ -86,6 +86,7 @@ function KidsCakePage() {
               return v && { price: v.price, mrp: v.mrp, ref: { type: "variant", variantId: v.id } };
             }}
             outOfStock={cake.outOfStock}
+            enquiry
             partyEssentials={partyEssentials}
           />
         </div>
@@ -106,6 +107,7 @@ function KidsCakePage() {
                   deliveryEstimate={item.deliveryEstimate}
                   meta={`${item.flavours.length} flavours · ${item.sizes.join(" / ")}`}
                   outOfStock={item.outOfStock}
+                  enquiry
                 />
               ))}
             </div>

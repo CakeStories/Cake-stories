@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/button";
 import { PriceTag } from "@/components/price-tag";
 import { useWishlist } from "@/lib/wishlist";
+import { isEnquiryHref } from "@/lib/enquiry";
 import { DEFAULT_PRODUCT_IMAGE, onProductImageError } from "@/lib/image-fallback";
 import { resizedImageUrl } from "@/lib/supabase";
 
@@ -51,7 +52,11 @@ function WishlistPage() {
                     {item.name}
                   </Link>
                   <div className="mt-1">
-                    <PriceTag price={item.price} mrp={item.mrp} size="sm" />
+                    {item.enquiry || isEnquiryHref(item.href) ? (
+                      <span className="text-xs font-semibold text-primary">Enquire for price</span>
+                    ) : (
+                      <PriceTag price={item.price} mrp={item.mrp} size="sm" />
+                    )}
                   </div>
                   <div className="mt-3 flex gap-2">
                     <Button size="sm" className="flex-1" asChild>

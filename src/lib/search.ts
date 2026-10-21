@@ -1,6 +1,7 @@
 import { supabaseRest } from "@/lib/supabase";
 import { getCategories, basePathForCategorySlug } from "@/lib/categories";
 import { DEFAULT_PRODUCT_IMAGE } from "@/lib/image-fallback";
+import { isEnquiryCategory } from "@/lib/enquiry";
 
 export type SearchResult = {
   id: string;
@@ -55,7 +56,7 @@ export async function searchProducts(query: string): Promise<SearchResult[]> {
 /**
  * Every active product whose name contains one of these whole words
  * (case-insensitive; "bow" matches "Pink Bow Cake" but not "Rainbow"),
- * leaving out ones with no price yet and Birthday Bash table kits. Used by the
+ * leaving out unpriced ones (except enquiry-only cakes) and Birthday Bash table kits. Used by the
  * Celebration Collection pages.
  */
 export async function productsNamed(words: string[]): Promise<SearchResult[]> {
@@ -63,7 +64,9 @@ export async function productsNamed(words: string[]): Promise<SearchResult[]> {
   const pattern = `\\y(${words.join("|")})\\y`;
   const results = await productsWhere({ name: `imatch.${pattern}` });
   return results.filter(
-    (r) => r.minPrice > 0 && !COLLECTION_EXCLUDED_CATEGORIES.has(r.categorySlug ?? ""),
+    (r) =>
+      (r.minPrice > 0 || isEnquiryCategory(r.categorySlug)) &&
+      !COLLECTION_EXCLUDED_CATEGORIES.has(r.categorySlug ?? ""),
   );
 }
 
@@ -71,7 +74,9 @@ export async function productsNamed(words: string[]): Promise<SearchResult[]> {
 export async function productsBySlug(slugs: string[]): Promise<SearchResult[]> {
   if (slugs.length === 0) return [];
   const results = await productsWhere({ slug: `in.(${slugs.join(",")})` });
-  return slugs.flatMap((slug) => results.filter((r) => r.slug === slug && r.minPrice > 0));
+  return slugs.flatMap((slug) =>
+    results.filter((r) => r.slug === slug && (r.minPrice > 0 || isEnquiryCategory(r.categorySlug))),
+  );
 }
 
 async function productsWhere(filters: Record<string, string>): Promise<SearchResult[]> {

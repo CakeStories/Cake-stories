@@ -17,6 +17,7 @@ import { CustomizeWhatsAppBanner } from "@/components/customize-whatsapp-banner"
 import { BirthdayBashCakeRow } from "@/components/birthday-bash-cake-row";
 import { CakeTabsRail, type TabbedCake } from "@/components/cake-tabs-rail";
 import { useStoreSettings } from "@/lib/store-settings";
+import { isEnquiryCategory } from "@/lib/enquiry";
 import {
   CategoryFilterBar,
   DEFAULT_FILTERS,
@@ -138,6 +139,7 @@ function CategoryPage() {
           deliveryEstimate: cake.deliveryEstimate,
           outOfStock: cake.outOfStock,
           tabGroup: group.character,
+          enquiry: true,
         })),
       ),
     [characterGroups],
@@ -215,13 +217,15 @@ function CategoryPage() {
     return { flavourOptions: availableFlavours(list, acc), priceOptions: availablePriceBands(list, acc) };
   }, [isWeddingCakes, isBirthdayCakes, isKidsCakes, weddingCakes, birthdayCakes, kidsCakes, featuredCakes]);
 
+  const enquiryCategory = isEnquiryCategory(category.slug);
   const filterBar =
     totalCount > 1 ? (
       <CategoryFilterBar
         state={filters}
         onChange={setFilters}
         flavourOptions={NO_FILTER_SLUGS.has(category.slug) ? [] : flavourOptions}
-        priceOptions={NO_FILTER_SLUGS.has(category.slug) ? [] : priceOptions}
+        priceOptions={NO_FILTER_SLUGS.has(category.slug) || enquiryCategory ? [] : priceOptions}
+        hidePriceSort={enquiryCategory}
         shown={shownCount}
         total={totalCount}
       />
@@ -333,6 +337,7 @@ function CategoryPage() {
                 deliveryEstimate={cake.deliveryEstimate}
                 meta={`${cake.flavours.length} flavours · ${cake.sizes.join(" / ")}`}
                 outOfStock={cake.outOfStock}
+                enquiry
               />
             ))}
           </div>
@@ -392,6 +397,7 @@ function CategoryPage() {
                 deliveryEstimate={cake.deliveryEstimate}
                 meta={`${cake.flavours.length} flavours · ${cake.sizes.join(" / ")}`}
                 outOfStock={cake.outOfStock}
+                enquiry
               />
             ))}
           </div>
@@ -416,6 +422,7 @@ function CategoryPage() {
                   deliveryEstimate={cake.deliveryEstimate}
                   meta={cake.sizes.join(" / ")}
                   outOfStock={cake.outOfStock}
+                  enquiry={isEnquiryCategory(primarySlug ?? category.slug)}
                 />
               );
             })}

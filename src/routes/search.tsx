@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { CakeCard } from "@/components/cake-card";
 import { searchProducts } from "@/lib/search";
 import { addRecentSearch } from "@/lib/recent-searches";
+import { isEnquiryCategory } from "@/lib/enquiry";
 
 export const Route = createFileRoute("/search")({
   validateSearch: (search: Record<string, unknown>): { q?: string } =>
@@ -100,6 +101,7 @@ function SearchPage() {
                     {...(result.badge != null && { badge: result.badge })}
                     {...(result.minPriceMrp != null && { minPriceMrp: result.minPriceMrp })}
                     deliveryEstimate={result.deliveryEstimate}
+                    enquiry={isEnquiryCategory(result.categorySlug)}
                   />
                 ))}
               </div>

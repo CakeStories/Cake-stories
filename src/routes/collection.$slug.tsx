@@ -6,6 +6,7 @@ import { CakeCard } from "@/components/cake-card";
 import { Button } from "@/components/button";
 import { getCollection } from "@/lib/collections";
 import { productsBySlug, productsNamed } from "@/lib/search";
+import { isEnquiryCategory } from "@/lib/enquiry";
 
 /** One "Celebration Collection" tile's page: its featured cake, then every matching cake. */
 export const Route = createFileRoute("/collection/$slug")({
@@ -82,6 +83,7 @@ function CollectionPage() {
                 minPrice={cake.minPrice}
                 {...(cake.minPriceMrp != null && { minPriceMrp: cake.minPriceMrp })}
                 deliveryEstimate={cake.deliveryEstimate ?? null}
+                enquiry={isEnquiryCategory(cake.categorySlug)}
               />
             ))}
           </div>

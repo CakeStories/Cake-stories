@@ -35,6 +35,7 @@ export function CakePurchasePanel({
   onFamilySelect,
   outOfStock = false,
   partyEssentials,
+  enquiry = false,
 }: {
   slug: string;
   /** Route prefix used to build the cart line's href, e.g. "/birthday-cake", "/wedding-cake", "/kids-cake". */
@@ -65,6 +66,11 @@ export function CakePurchasePanel({
   outOfStock?: boolean;
   /** Party Essentials products shown in the "Make it special" strip above Add to Cart. */
   partyEssentials?: PartyEssentialItem[];
+  /**
+   * Customisable cake (see lib/enquiry.ts): no price shown and no cart —
+   * the customer picks flavour/size, adds a message, and enquires on WhatsApp.
+   */
+  enquiry?: boolean;
 }) {
   const { items: cartItems, addItem, setItem, setQuantity: setCartQuantity } = useCart();
   const navigate = useNavigate();
@@ -93,6 +99,7 @@ export function CakePurchasePanel({
   // A ₹0 price in /manage means "price on request": the customer enquires on
   // WhatsApp instead of checking out (the server also refuses to sell it).
   const priceOnRequest = rawVariant !== undefined && rawVariant.price <= 0;
+  const enquiryMode = enquiry || priceOnRequest;
 
   const variantLabel = useMemo(() => {
     if (flavours.length > 0) return `${size} · ${flavourLabel(flavour ?? "")}`;
@@ -100,7 +107,7 @@ export function CakePurchasePanel({
   }, [flavours.length, size, flavour]);
 
   const buildLine = () => {
-    if (price === undefined || !rawVariant || priceOnRequest) return null;
+    if (price === undefined || !rawVariant || enquiryMode) return null;
     const trimmedNote = note.trim();
     const trimmedInstructions = specialInstructions.trim();
     return {
@@ -169,8 +176,10 @@ export function CakePurchasePanel({
       id: wishlistId,
       name: title,
       image,
-      price: price ?? rawVariant?.price ?? 0,
-      ...(effective?.mrp != null && { mrp: effective.mrp }),
+      // Customisable cakes are saved without a price (none is shown on the site).
+      price: enquiryMode ? 0 : (price ?? rawVariant?.price ?? 0),
+      ...(!enquiryMode && effective?.mrp != null && { mrp: effective.mrp }),
+      ...(enquiryMode && { enquiry: true }),
       href: wishlistId,
     });
   };
@@ -191,7 +200,12 @@ export function CakePurchasePanel({
       <h1 className="break-words font-display text-3xl sm:text-4xl">{title}</h1>
 
       <div className="mt-3">
-        {price !== undefined ? (
+        {enquiryMode ? (
+          <p className="text-sm text-muted-foreground">
+            Customise it your way — choose your flavour and size, then enquire on WhatsApp for the
+            price, toppings and decorations.
+          </p>
+        ) : price !== undefined ? (
           <PriceTag price={price} mrp={effective?.mrp ?? null} size="lg" />
         ) : (
           <strong className="text-2xl">Select options</strong>
@@ -282,7 +296,7 @@ export function CakePurchasePanel({
         <Truck size={14} className="text-primary" /> Free delivery above ₹999
       </div>
 
-      {!priceOnRequest && (
+      {(
       <>
       <label className="mt-6 block text-sm">
         <span className="mb-1 block font-medium text-foreground">
@@ -316,7 +330,7 @@ export function CakePurchasePanel({
         </span>
       </label>
 
-      {partyEssentials && partyEssentials.length > 0 && (
+      {!enquiryMode && partyEssentials && partyEssentials.length > 0 && (
         <div className="mt-6">
           <h2 className="text-sm font-bold text-foreground">Make it special</h2>
           <div className="mt-2 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
@@ -382,9 +396,18 @@ export function CakePurchasePanel({
       )}
 
       <div className="mt-7 flex flex-wrap items-center gap-3">
-        {priceOnRequest ? (
+        {enquiryMode ? (
           <a
-            href={cakeEnquiryLink(title, flavours.length > 0 ? flavourLabel(flavour ?? "") : undefined, size || undefined)}
+            href={cakeEnquiryLink(
+              title,
+              flavours.length > 0 ? flavourLabel(flavour ?? "") : undefined,
+              size || undefined,
+              {
+                cakeMessage: note,
+                notes: specialInstructions,
+                ...(typeof window !== "undefined" && { url: `${window.location.origin}${basePath}/${slug}` }),
+              },
+            )}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-[#25D366] px-6 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02] sm:flex-none"

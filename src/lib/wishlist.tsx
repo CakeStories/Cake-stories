@@ -8,6 +8,8 @@ export type WishlistItem = {
   price: number;
   mrp?: number;
   href: string;
+  /** Customisable cake — no price shown; enquire on WhatsApp. */
+  enquiry?: boolean;
 };
 
 type WishlistContextValue = {

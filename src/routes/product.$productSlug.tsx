@@ -9,6 +9,7 @@ import { getCakeBySlugAnywhere, getCakesForCategory } from "@/lib/generic-cakes"
 import { getPartyEssentials } from "@/lib/party-essentials";
 import { onProductImageError } from "@/lib/image-fallback";
 import { responsiveImage } from "@/lib/supabase";
+import { isEnquiryCategory } from "@/lib/enquiry";
 
 export const Route = createFileRoute("/product/$productSlug")({
   loader: async ({ params }) => {
@@ -174,6 +175,7 @@ function ProductPage() {
                 );
               }}
               outOfStock={data.cake.outOfStock}
+              enquiry={isEnquiryCategory(categorySlug)}
               partyEssentials={data.partyEssentials}
             />
           )}
@@ -195,6 +197,7 @@ function ProductPage() {
                   deliveryEstimate={item.deliveryEstimate}
                   meta={item.meta}
                   outOfStock={item.outOfStock}
+                  enquiry={isEnquiryCategory(categorySlug)}
                 />
               ))}
             </div>

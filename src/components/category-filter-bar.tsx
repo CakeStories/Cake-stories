@@ -120,6 +120,7 @@ export function CategoryFilterBar({
   onChange,
   flavourOptions,
   priceOptions,
+  hidePriceSort = false,
   shown,
   total,
 }: {
@@ -127,6 +128,8 @@ export function CategoryFilterBar({
   onChange: (next: FilterState) => void;
   flavourOptions: string[];
   priceOptions: readonly { id: string; label: string }[];
+  /** Enquiry-only categories show no prices, so sorting by price makes no sense. */
+  hidePriceSort?: boolean;
   shown: number;
   total: number;
 }) {
@@ -184,7 +187,7 @@ export function CategoryFilterBar({
             onChange={(e) => onChange({ ...state, sort: e.target.value as SortOption })}
             className="h-10 appearance-none rounded-md border border-input bg-background pl-9 pr-9 text-sm font-semibold outline-none focus:ring-2 focus:ring-ring"
           >
-            {SORT_OPTIONS.map((option) => (
+            {SORT_OPTIONS.filter((o) => !hidePriceSort || !o.startsWith("Price")).map((option) => (
               <option key={option}>{option}</option>
             ))}
           </select>

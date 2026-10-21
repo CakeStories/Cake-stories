@@ -17,6 +17,8 @@ export type TabbedCake = {
   outOfStock: boolean;
   /** Which tab this cake belongs to — set per-product from /manage. Not shown if blank. */
   tabGroup: string | null;
+  /** Customisable cake: "Enquire for price" instead of a price. */
+  enquiry?: boolean;
 };
 
 type Group = { label: string; cakes: TabbedCake[] };
@@ -75,10 +77,10 @@ function RailCard({ cake, duplicate = false }: { cake: TabbedCake; duplicate?: b
       <div className="px-3 pb-3 pt-2.5">
         <p className="truncate text-[13px] font-medium text-foreground">{cake.title}</p>
         <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-sm">
-          <strong className="text-[15px] font-bold">
-            {shown.price > 0 ? `₹${shown.price}` : "Price on request"}
+          <strong className={cake.enquiry ? "text-[13px] font-semibold text-primary" : "text-[15px] font-bold"}>
+            {cake.enquiry ? "Enquire for price" : shown.price > 0 ? `₹${shown.price}` : "Price on request"}
           </strong>
-          {off && shown.price > 0 && (
+          {off && shown.price > 0 && !cake.enquiry && (
             <>
               <span className="text-[11px] text-muted-foreground line-through">₹{shown.mrp}</span>
               <span className="text-[11px] font-semibold text-success">{off}OFF</span>

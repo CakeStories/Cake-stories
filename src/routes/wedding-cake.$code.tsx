@@ -25,7 +25,7 @@ export const Route = createFileRoute("/wedding-cake/$code")({
           { title: `${loaderData.cake.name} Wedding Cake | Cake Stories` },
           {
             name: "description",
-            content: `Configure the ${loaderData.cake.name} wedding cake — choose your flavour and size, from ₹${loaderData.cake.minPrice}.`,
+            content: `Configure the ${loaderData.cake.name} wedding cake — choose your flavour and size, then enquire on WhatsApp.`,
           },
         ]
       : [],
@@ -83,6 +83,7 @@ function WeddingCakePage() {
               return v && { price: v.price, mrp: v.mrp, ref: { type: "variant", variantId: v.id } };
             }}
             outOfStock={cake.outOfStock}
+            enquiry
             partyEssentials={partyEssentials}
           />
         </div>
@@ -103,6 +104,7 @@ function WeddingCakePage() {
                   deliveryEstimate={item.deliveryEstimate}
                   meta={`${item.flavours.length} flavours · ${item.sizes.join(" / ")}`}
                   outOfStock={item.outOfStock}
+                  enquiry
                 />
               ))}
             </div>

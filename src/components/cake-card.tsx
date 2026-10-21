@@ -18,6 +18,7 @@ export function CakeCard({
   outOfStock = false,
   tabIndex,
   imageSizes = "(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw",
+  enquiry = false,
 }: {
   href: string;
   image: string;
@@ -48,6 +49,8 @@ export function CakeCard({
   tabIndex?: number;
   /** The card's rendered width, for picking the photo size (defaults suit the category grids). */
   imageSizes?: string;
+  /** Customisable cake (lib/enquiry.ts): show "Enquire for price" instead of a price. */
+  enquiry?: boolean;
 }) {
   // Show the same sale price the product page and checkout use.
   const settings = useStoreSettings();
@@ -91,7 +94,11 @@ export function CakeCard({
           {title}
         </h3>
         <div className="mt-1">
-          <PriceTag price={shown.price} mrp={shown.mrp ?? null} size="sm" />
+          {enquiry ? (
+            <span className="text-sm font-semibold text-primary">Enquire for price</span>
+          ) : (
+            <PriceTag price={shown.price} mrp={shown.mrp ?? null} size="sm" />
+          )}
         </div>
         {/* Its own line, bottom-right, so a long sale price never pushes it around. */}
         <p className="mt-1 flex items-center justify-end gap-1 text-[11px] font-medium text-success">

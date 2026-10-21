@@ -1,9 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, MessageCircle } from "lucide-react";
-import { PriceTag } from "@/components/price-tag";
 import { flavourLabel } from "@/lib/flavours";
 import { cakeEnquiryLink } from "@/lib/whatsapp";
-import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { onProductImageError } from "@/lib/image-fallback";
 import type { GenericCake } from "@/lib/generic-cakes";
 import { responsiveImage } from "@/lib/supabase";
@@ -17,21 +15,6 @@ import { responsiveImage } from "@/lib/supabase";
 export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
   const [flavour, setFlavour] = useState<string | undefined>(undefined);
   const [size, setSize] = useState<string | undefined>(undefined);
-  const settings = useStoreSettings();
-
-  const matchedVariant = useMemo(
-    () =>
-      cake.variants.find(
-        (v) =>
-          (cake.flavours.length === 0 || v.flavour === flavour) &&
-          (cake.sizes.length === 0 || v.size === size),
-      ),
-    [cake, flavour, size],
-  );
-
-  const shown = matchedVariant
-    ? withSitewideDiscount(matchedVariant.price, matchedVariant.mrp, settings)
-    : withSitewideDiscount(cake.minPrice, cake.minPriceMrp, settings);
 
   const enquireHref = cakeEnquiryLink(
     cake.name,
@@ -67,9 +50,8 @@ export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
       <div className="flex flex-col justify-center">
         <h2 className="font-display text-2xl sm:text-3xl">{cake.name}</h2>
 
-        <div className="mt-2">
-          <PriceTag price={shown.price} mrp={shown.mrp ?? null} size="lg" />
-        </div>
+        {/* Customisable table kit — no price on the site; agreed on WhatsApp. */}
+        <p className="mt-2 text-sm font-semibold text-primary">Enquire for price</p>
 
         {cake.description && (
           <p className="mt-3 text-sm leading-6 text-foreground/80">{cake.description}</p>

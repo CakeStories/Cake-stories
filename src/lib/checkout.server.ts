@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getProduct } from "@/lib/catalog";
+import { isEnquiryCategoryId } from "@/lib/enquiry";
 import {
   ADVANCE_NOTICE_CATEGORY_IDS,
   CAKE_MESSAGE_MAX,
@@ -191,6 +192,8 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
       const variant = variantById.get(ref.variantId);
       // A ₹0 price means "price on request" — never sellable through checkout.
       if (!variant?.active || !variant.products?.active || !(Number(variant.price) > 0)) return null;
+      // Customisable cakes are ordered over WhatsApp, never through checkout.
+      if (isEnquiryCategoryId(variant.products.category_id)) return null;
       return {
         unitPrice: applySitewideDiscount(Number(variant.price), percent),
         name: variant.products.name,

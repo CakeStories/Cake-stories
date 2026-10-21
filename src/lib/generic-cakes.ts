@@ -315,9 +315,6 @@ export async function getCharacterCakes(categoryId: string): Promise<CharacterCa
           href: `/kids-cake/${kids.slug}`,
         }
       : { ...own, href: `/product/${own.slug}` };
-    // No price of its own and no priced Kids Cakes twin: keep it out of the
-    // character rails until a price is set in /manage (no "Price on request").
-    if (cake.minPrice <= 0) continue;
     const list = groups.get(tag) ?? [];
     list.push(cake);
     groups.set(tag, list);

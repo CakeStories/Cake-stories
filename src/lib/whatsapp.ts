@@ -21,10 +21,18 @@ export function customCakeEnquiryLink(): string {
  * The per-cake "Enquire Now" button — pre-fills the cake's name plus
  * whichever flavour/size the customer picked (either, both, or neither).
  */
-export function cakeEnquiryLink(name: string, flavour?: string, size?: string): string {
-  const details = [flavour, size].filter(Boolean).join(", ");
-  const message = details
-    ? `Hi! I'm interested in the ${name} (${details}). Could you share more details and pricing?`
-    : `Hi! I'm interested in the ${name}. Could you share more details and pricing?`;
-  return whatsappLink(message);
+export function cakeEnquiryLink(
+  name: string,
+  flavour?: string,
+  size?: string,
+  extras: { cakeMessage?: string; notes?: string; url?: string } = {},
+): string {
+  const lines = [`Hi Cake Stories! I'd like to order the ${name}.`];
+  if (flavour) lines.push(`Flavour: ${flavour}`);
+  if (size) lines.push(`Size: ${size}`);
+  if (extras.cakeMessage?.trim()) lines.push(`Message on the cake: "${extras.cakeMessage.trim()}"`);
+  if (extras.notes?.trim()) lines.push(`Notes: ${extras.notes.trim()}`);
+  if (extras.url) lines.push(extras.url);
+  lines.push("Could you share the price and customisation options?");
+  return whatsappLink(lines.join("\n"));
 }
