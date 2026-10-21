@@ -12,7 +12,12 @@ export type SearchResult = {
   href: string;
   badge?: string | null;
   deliveryEstimate?: string | null;
+  /** The product's own category (e.g. "birthday-bash"). */
+  categorySlug?: string | undefined;
 };
+
+/** Categories never pulled into the Celebration Collection pages. */
+const COLLECTION_EXCLUDED_CATEGORIES = new Set(["birthday-bash"]);
 
 type ProductRow = {
   id: string;
@@ -50,13 +55,16 @@ export async function searchProducts(query: string): Promise<SearchResult[]> {
 /**
  * Every active product whose name contains one of these whole words
  * (case-insensitive; "bow" matches "Pink Bow Cake" but not "Rainbow"),
- * leaving out ones with no price yet. Used by the Celebration Collection pages.
+ * leaving out ones with no price yet and Birthday Bash table kits. Used by the
+ * Celebration Collection pages.
  */
 export async function productsNamed(words: string[]): Promise<SearchResult[]> {
   // Postgres regex: \y marks a word boundary.
   const pattern = `\\y(${words.join("|")})\\y`;
   const results = await productsWhere({ name: `imatch.${pattern}` });
-  return results.filter((r) => r.minPrice > 0);
+  return results.filter(
+    (r) => r.minPrice > 0 && !COLLECTION_EXCLUDED_CATEGORIES.has(r.categorySlug ?? ""),
+  );
 }
 
 /** These products (by slug), in the order given; missing or unpriced ones are left out. */
@@ -126,6 +134,7 @@ async function productsWhere(filters: Record<string, string>): Promise<SearchRes
       href: `${basePath}/${p.slug}`,
       badge: p.badge,
       deliveryEstimate: p.delivery_estimate,
+      categorySlug,
     };
   });
 
