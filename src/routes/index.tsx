@@ -107,6 +107,18 @@ function scrollByCards(ref: React.RefObject<HTMLDivElement | null>, direction: -
 // "Cakes for every celebration" banners — each one's own photo, from
 // Supabase Storage, with a short two-line description.
 const CELEBRATION_IMAGE_BASE = "/sb/storage/v1/object/public/product-images"; // via our /sb proxy — see vite.config.ts
+// "The Celebration Collection" — styled cake tables, each opening that cake.
+// Photos are pre-resized copies in public/celebration-collection/.
+const celebrationCollection: { label: string; slug: string }[] = [
+  { label: "Floral Cakes", slug: "celebration-tower" },
+  { label: "Theme Cakes", slug: "race-day-rally" },
+  { label: "Bow Cakes", slug: "pink-ribbon-party" },
+  { label: "Baby Shower", slug: "twinkle-gender-reveal" },
+  { label: "Photo Cakes", slug: "cherry-love-memories" },
+  { label: "First Birthday Cakes", slug: "pink-crown-princess" },
+  { label: "Holy Communion", slug: "holy-blessings-cake" },
+];
+
 const celebrations: { label: string; description: string; category: string; image: string }[] = [
   {
     label: "First Birthday",
@@ -172,6 +184,7 @@ function CakeStore() {
   const { dbBanners } = Route.useLoaderData();
   const flavourScrollRef = useRef<HTMLDivElement>(null);
   const celebrationScrollRef = useRef<HTMLDivElement>(null);
+  const collectionScrollRef = useRef<HTMLDivElement>(null);
   const [bannerIndex, setBannerIndex] = useState(0);
 
   // Banners configured in the admin dashboard take over once at least one exists;
@@ -390,6 +403,56 @@ function CakeStore() {
               aria-label="Scroll celebrations right"
               onClick={() => scrollByCards(celebrationScrollRef, 1)}
               className="absolute right-0 top-1/2 hidden -translate-y-1/2 translate-x-3 rounded-full border border-border bg-background p-2 shadow-md transition hover:bg-accent sm:flex"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </section>
+
+        <section className="border-t border-border py-9">
+          <h2 className="font-display text-3xl">The Celebration Collection</h2>
+          <div className="relative mt-5">
+            <div
+              ref={collectionScrollRef}
+              className="scrollbar-none flex snap-x gap-4 overflow-x-auto pb-6 sm:gap-6"
+            >
+              {celebrationCollection.map((item) => (
+                <Link
+                  key={item.slug}
+                  to="/kids-cake/$slug"
+                  params={{ slug: item.slug }}
+                  className="group relative w-[42vw] max-w-[220px] shrink-0 snap-start sm:w-[200px] lg:w-[210px]"
+                >
+                  <span className="block aspect-[3/5] overflow-hidden rounded-md bg-muted shadow-sm">
+                    <img
+                      src={`/celebration-collection/${item.slug}.webp`}
+                      alt={item.label}
+                      width={480}
+                      height={800}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  </span>
+                  {/* Gradient label pill overlapping the bottom edge of the photo. */}
+                  <span className="absolute inset-x-3 -bottom-3 rounded-lg bg-gradient-to-r from-[#f0566f] to-[#9b5cf6] px-2 py-2 text-center text-xs font-semibold text-white shadow-md sm:text-sm">
+                    {item.label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <button
+              type="button"
+              aria-label="Scroll collection left"
+              onClick={() => scrollByCards(collectionScrollRef, -1)}
+              className="absolute left-0 top-[45%] hidden -translate-x-3 -translate-y-1/2 rounded-full border border-border bg-background p-2 shadow-md transition hover:bg-accent sm:flex"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              aria-label="Scroll collection right"
+              onClick={() => scrollByCards(collectionScrollRef, 1)}
+              className="absolute right-0 top-[45%] hidden -translate-y-1/2 translate-x-3 rounded-full border border-border bg-background p-2 shadow-md transition hover:bg-accent sm:flex"
             >
               <ChevronRight size={18} />
             </button>
