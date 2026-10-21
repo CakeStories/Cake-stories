@@ -44,11 +44,33 @@ type ImageRow = {
 export async function searchProducts(query: string): Promise<SearchResult[]> {
   const term = query.trim();
   if (!term) return [];
+  return productsWhere({ name: `ilike.*${term}*` });
+}
 
+/**
+ * Every active product whose name contains one of these whole words
+ * (case-insensitive; "bow" matches "Pink Bow Cake" but not "Rainbow"),
+ * leaving out ones with no price yet. Used by the Celebration Collection pages.
+ */
+export async function productsNamed(words: string[]): Promise<SearchResult[]> {
+  // Postgres regex: \y marks a word boundary.
+  const pattern = `\\y(${words.join("|")})\\y`;
+  const results = await productsWhere({ name: `imatch.${pattern}` });
+  return results.filter((r) => r.minPrice > 0);
+}
+
+/** These products (by slug), in the order given; missing or unpriced ones are left out. */
+export async function productsBySlug(slugs: string[]): Promise<SearchResult[]> {
+  if (slugs.length === 0) return [];
+  const results = await productsWhere({ slug: `in.(${slugs.join(",")})` });
+  return slugs.flatMap((slug) => results.filter((r) => r.slug === slug && r.minPrice > 0));
+}
+
+async function productsWhere(filters: Record<string, string>): Promise<SearchResult[]> {
   const [products, categories] = await Promise.all([
     supabaseRest<ProductRow>("products", {
       select: "id,slug,name,image_url,category_id,badge,delivery_estimate",
-      filters: { name: `ilike.*${term}*`, active: "eq.true" },
+      filters: { ...filters, active: "eq.true" },
     }),
     getCategories(),
   ]);

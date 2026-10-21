@@ -18,6 +18,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as BirthdayCakeSlugRouteImport } from './routes/birthday-cake.$slug'
 import { Route as CategoryCategorySlugRouteImport } from './routes/category.$categorySlug'
+import { Route as CollectionSlugRouteImport } from './routes/collection.$slug'
 import { Route as FlavourFlavourSlugRouteImport } from './routes/flavour.$flavourSlug'
 import { Route as KidsCakeSlugRouteImport } from './routes/kids-cake.$slug'
 import { Route as ManageSecretRouteImport } from './routes/manage.$secret'
@@ -69,6 +70,11 @@ const CategoryCategorySlugRoute = CategoryCategorySlugRouteImport.update({
   path: '/category/$categorySlug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CollectionSlugRoute = CollectionSlugRouteImport.update({
+  id: '/collection/$slug',
+  path: '/collection/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FlavourFlavourSlugRoute = FlavourFlavourSlugRouteImport.update({
   id: '/flavour/$flavourSlug',
   path: '/flavour/$flavourSlug',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/wishlist': typeof WishlistRoute
   '/birthday-cake/$slug': typeof BirthdayCakeSlugRoute
   '/category/$categorySlug': typeof CategoryCategorySlugRoute
+  '/collection/$slug': typeof CollectionSlugRoute
   '/flavour/$flavourSlug': typeof FlavourFlavourSlugRoute
   '/kids-cake/$slug': typeof KidsCakeSlugRoute
   '/manage/$secret': typeof ManageSecretRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/wishlist': typeof WishlistRoute
   '/birthday-cake/$slug': typeof BirthdayCakeSlugRoute
   '/category/$categorySlug': typeof CategoryCategorySlugRoute
+  '/collection/$slug': typeof CollectionSlugRoute
   '/flavour/$flavourSlug': typeof FlavourFlavourSlugRoute
   '/kids-cake/$slug': typeof KidsCakeSlugRoute
   '/manage/$secret': typeof ManageSecretRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/wishlist': typeof WishlistRoute
   '/birthday-cake/$slug': typeof BirthdayCakeSlugRoute
   '/category/$categorySlug': typeof CategoryCategorySlugRoute
+  '/collection/$slug': typeof CollectionSlugRoute
   '/flavour/$flavourSlug': typeof FlavourFlavourSlugRoute
   '/kids-cake/$slug': typeof KidsCakeSlugRoute
   '/manage/$secret': typeof ManageSecretRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/wishlist'
     | '/birthday-cake/$slug'
     | '/category/$categorySlug'
+    | '/collection/$slug'
     | '/flavour/$flavourSlug'
     | '/kids-cake/$slug'
     | '/manage/$secret'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/wishlist'
     | '/birthday-cake/$slug'
     | '/category/$categorySlug'
+    | '/collection/$slug'
     | '/flavour/$flavourSlug'
     | '/kids-cake/$slug'
     | '/manage/$secret'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/wishlist'
     | '/birthday-cake/$slug'
     | '/category/$categorySlug'
+    | '/collection/$slug'
     | '/flavour/$flavourSlug'
     | '/kids-cake/$slug'
     | '/manage/$secret'
@@ -205,6 +217,7 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   BirthdayCakeSlugRoute: typeof BirthdayCakeSlugRoute
   CategoryCategorySlugRoute: typeof CategoryCategorySlugRoute
+  CollectionSlugRoute: typeof CollectionSlugRoute
   FlavourFlavourSlugRoute: typeof FlavourFlavourSlugRoute
   KidsCakeSlugRoute: typeof KidsCakeSlugRoute
   ManageSecretRoute: typeof ManageSecretRoute
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoryCategorySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/collection/$slug': {
+      id: '/collection/$slug'
+      path: '/collection/$slug'
+      fullPath: '/collection/$slug'
+      preLoaderRoute: typeof CollectionSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/flavour/$flavourSlug': {
       id: '/flavour/$flavourSlug'
       path: '/flavour/$flavourSlug'
@@ -325,6 +345,7 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   BirthdayCakeSlugRoute: BirthdayCakeSlugRoute,
   CategoryCategorySlugRoute: CategoryCategorySlugRoute,
+  CollectionSlugRoute: CollectionSlugRoute,
   FlavourFlavourSlugRoute: FlavourFlavourSlugRoute,
   KidsCakeSlugRoute: KidsCakeSlugRoute,
   ManageSecretRoute: ManageSecretRoute,

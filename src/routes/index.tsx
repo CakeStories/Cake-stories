@@ -7,13 +7,14 @@ import { SiteFooter } from "@/components/site-footer";
 import { CakeCard } from "@/components/cake-card";
 import { LoopingRail } from "@/components/looping-rail";
 import { ReviewsSection } from "@/components/reviews-section";
-import { CHARACTER_CAKES_CATEGORY_ID, getCharacterCakes } from "@/lib/generic-cakes";
+import { CHARACTER_CAKES_CATEGORY_ID, getCakesForCategory, getCharacterCakes } from "@/lib/generic-cakes";
+import { COLLECTIONS } from "@/lib/collections";
 import { getBanners } from "@/lib/banners";
 import { flavours } from "@/lib/flavour-list";
 import bannerClassics from "@/assets/cake-stories-classics.jpg";
 import bannerDesigner from "@/assets/cake-stories-designer.jpg";
 import bannerCustomize from "@/assets/cake-stories-customize.jpg";
-import { resizedImageUrl } from "@/lib/supabase";
+import { resizedImageUrl, responsiveImage } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -107,16 +108,17 @@ function scrollByCards(ref: React.RefObject<HTMLDivElement | null>, direction: -
 // "Cakes for every celebration" banners — each one's own photo, from
 // Supabase Storage, with a short two-line description.
 const CELEBRATION_IMAGE_BASE = "/sb/storage/v1/object/public/product-images"; // via our /sb proxy — see vite.config.ts
-// "The Celebration Collection" — styled cake tables, each opening that cake.
-// Photos are pre-resized copies in public/celebration-collection/.
-const celebrationCollection: { label: string; slug: string }[] = [
-  { label: "Floral Cakes", slug: "celebration-tower" },
-  { label: "Theme Cakes", slug: "race-day-rally" },
-  { label: "Bow Cakes", slug: "pink-ribbon-party" },
-  { label: "Baby Shower", slug: "twinkle-gender-reveal" },
-  { label: "Photo Cakes", slug: "cherry-love-memories" },
-  { label: "First Birthday Cakes", slug: "pink-crown-princess" },
-  { label: "Holy Communion", slug: "holy-blessings-cake" },
+// "Sweet Treats & More" — real products in that category, shown in this order.
+const SWEET_TREATS_CATEGORY_ID = "b308db06-d6a5-4d6f-9138-84f0fb7f138f";
+const SWEET_TREATS_ORDER = [
+  "butter-melties",
+  "masala-cookies",
+  "butter-cookies",
+  "cashew-cookies",
+  "tiramisu",
+  "donut-3-in-1-pack",
+  "brownie-tub",
+  "brownie-piece",
 ];
 
 const celebrations: { label: string; description: string; category: string; image: string }[] = [
@@ -185,6 +187,13 @@ function CakeStore() {
   const flavourScrollRef = useRef<HTMLDivElement>(null);
   const celebrationScrollRef = useRef<HTMLDivElement>(null);
   const collectionScrollRef = useRef<HTMLDivElement>(null);
+  const sweetsScrollRef = useRef<HTMLDivElement>(null);
+  const { data: sweetTreatsData = [] } = useQuery({
+    queryKey: ["sweet-treats"],
+    queryFn: () => getCakesForCategory(SWEET_TREATS_CATEGORY_ID),
+    staleTime: 5 * 60_000,
+  });
+  const sweetTreats = SWEET_TREATS_ORDER.flatMap((slug) => sweetTreatsData.filter((t) => t.slug === slug && t.minPrice > 0));
   const [bannerIndex, setBannerIndex] = useState(0);
 
   // Banners configured in the admin dashboard take over once at least one exists;
@@ -416,16 +425,16 @@ function CakeStore() {
               ref={collectionScrollRef}
               className="scrollbar-none flex snap-x gap-4 overflow-x-auto pb-6 sm:gap-6"
             >
-              {celebrationCollection.map((item) => (
+              {COLLECTIONS.map((item) => (
                 <Link
                   key={item.slug}
-                  to="/kids-cake/$slug"
+                  to="/collection/$slug"
                   params={{ slug: item.slug }}
                   className="group relative w-[42vw] max-w-[220px] shrink-0 snap-start sm:w-[200px] lg:w-[210px]"
                 >
                   <span className="block aspect-[3/5] overflow-hidden rounded-md bg-muted shadow-sm">
                     <img
-                      src={`/celebration-collection/${item.slug}.webp`}
+                      src={item.image}
                       alt={item.label}
                       width={480}
                       height={800}
@@ -458,6 +467,59 @@ function CakeStore() {
             </button>
           </div>
         </section>
+
+        {sweetTreats.length > 0 && (
+          <section className="border-t border-border py-9">
+            <h2 className="font-display text-3xl">Sweet Treats &amp; More</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Brownies, cookies, creamy desserts and donuts — little indulgences, big happiness.
+            </p>
+            <div className="relative mt-5">
+              <div
+                ref={sweetsScrollRef}
+                className="scrollbar-none flex snap-x gap-4 overflow-x-auto pb-6 sm:gap-6"
+              >
+                {sweetTreats.map((treat) => (
+                  <Link
+                    key={treat.id}
+                    to="/product/$productSlug"
+                    params={{ productSlug: treat.slug }}
+                    className="group relative w-[42vw] max-w-[220px] shrink-0 snap-start sm:w-[200px] lg:w-[210px]"
+                  >
+                    <span className="block aspect-[3/5] overflow-hidden rounded-md bg-muted shadow-sm">
+                      <img
+                        {...responsiveImage(treat.image, 240, "(min-width: 640px) 210px, 42vw")}
+                        alt={treat.name}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    </span>
+                    <span className="absolute inset-x-3 -bottom-3 rounded-lg bg-gradient-to-r from-[#f0566f] to-[#9b5cf6] px-2 py-1.5 text-center text-white shadow-md">
+                      <span className="block truncate text-xs font-semibold sm:text-sm">{treat.name}</span>
+                      <span className="block text-[11px] font-bold opacity-95">₹{treat.minPrice}</span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+              <button
+                type="button"
+                aria-label="Scroll sweet treats left"
+                onClick={() => scrollByCards(sweetsScrollRef, -1)}
+                className="absolute left-0 top-[45%] hidden -translate-x-3 -translate-y-1/2 rounded-full border border-border bg-background p-2 shadow-md transition hover:bg-accent sm:flex"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                type="button"
+                aria-label="Scroll sweet treats right"
+                onClick={() => scrollByCards(sweetsScrollRef, 1)}
+                className="absolute right-0 top-[45%] hidden -translate-y-1/2 translate-x-3 rounded-full border border-border bg-background p-2 shadow-md transition hover:bg-accent sm:flex"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </section>
+        )}
 
         {characterGroups.length > 0 && activeGroup && (
           <section id="shop" className="scroll-mt-24 border-t border-border py-10">
