@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-/** Enough cards that the row is always full and has room to loop in both directions. */
-const MIN_RENDERED_ITEMS = 16;
+/** How many times the list is shown in a row before the rail ends. */
+const COPIES = 3;
 
 /**
- * A horizontal rail that repeats its items so it never ends half-empty (three
- * cakes in a row built for five looks broken) and scrolls round endlessly:
- * when the customer nears either end it silently jumps back by one copy of
- * the list, which looks identical, so the arrows never run out.
+ * A horizontal rail that shows its items three times in a row, so a short
+ * list still fills the row (three cakes in a row built for five looks broken)
+ * and gives a bit more to scroll through — then it ends. The arrows hide at
+ * either end.
  *
- * `renderItem` gets `duplicate: true` for every copy except one, so callers
- * can keep the repeats out of the keyboard tab order.
+ * `renderItem` gets `duplicate: true` for the repeats, so callers can keep
+ * them out of the keyboard tab order.
  */
 export function LoopingRail<T>({
   items,
@@ -34,41 +34,33 @@ export function LoopingRail<T>({
   nextLabel?: string;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const settleTimer = useRef<number | undefined>(undefined);
-  const copies = items.length === 0 ? 0 : Math.max(3, Math.ceil(MIN_RENDERED_ITEMS / items.length));
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
 
-  /** Width of one full copy of the list, including the gaps between cards. */
-  const period = useCallback(() => {
+  const updateEnds = useCallback(() => {
     const el = trackRef.current;
-    const first = el?.children[0] as HTMLElement | undefined;
-    const nextCopy = el?.children[items.length] as HTMLElement | undefined;
-    return first && nextCopy ? nextCopy.offsetLeft - first.offsetLeft : 0;
-  }, [items.length]);
+    if (!el) return;
+    setAtStart(el.scrollLeft <= 4);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
+  }, []);
 
-  /** If we've drifted into the first or last copy, jump by one copy (looks identical). */
-  const recenter = useCallback(() => {
-    const el = trackRef.current;
-    const p = period();
-    if (!el || p <= 0) return;
-    if (el.scrollLeft < p * 0.5) el.scrollLeft += p;
-    else if (el.scrollLeft + el.clientWidth > el.scrollWidth - p * 0.5) el.scrollLeft -= p;
-  }, [period]);
-
-  // Start on the second copy, so there's something to scroll back into.
+  // Back to the first item when the list (or selected tab) changes.
   useEffect(() => {
     const el = trackRef.current;
-    if (el) el.scrollLeft = period();
-  }, [resetKey, items.length, period]);
+    if (el) el.scrollLeft = 0;
+    updateEnds();
+  }, [resetKey, items.length, updateEnds]);
 
-  useEffect(() => () => window.clearTimeout(settleTimer.current), []);
+  // The row's width can settle after the first render (fonts, layout), so re-check the ends then too.
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateEnds);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [items.length, updateEnds]);
 
   if (items.length === 0) return null;
-
-  // Wait until scrolling (including smooth arrow scrolls and snap) settles.
-  const onScroll = () => {
-    window.clearTimeout(settleTimer.current);
-    settleTimer.current = window.setTimeout(recenter, 150);
-  };
 
   const scrollByPage = (direction: -1 | 1) => {
     const el = trackRef.current;
@@ -82,37 +74,41 @@ export function LoopingRail<T>({
     <div className="relative">
       <div
         ref={trackRef}
-        onScroll={onScroll}
+        onScroll={updateEnds}
         className={`scrollbar-none flex snap-x overflow-x-auto ${trackClassName}`}
       >
-        {Array.from({ length: copies }, (_, copy) =>
+        {Array.from({ length: COPIES }, (_, copy) =>
           items.map((item) => (
             <div
               key={`${copy}-${getKey(item)}`}
               className="shrink-0 snap-start"
-              aria-hidden={copy !== 1 || undefined}
+              aria-hidden={copy !== 0 || undefined}
             >
-              {renderItem(item, copy !== 1)}
+              {renderItem(item, copy !== 0)}
             </div>
           )),
         )}
       </div>
-      <button
-        type="button"
-        aria-label={previousLabel}
-        onClick={() => scrollByPage(-1)}
-        className={`${arrow} left-2 ${arrowClassName}`}
-      >
-        <ChevronLeft size={20} />
-      </button>
-      <button
-        type="button"
-        aria-label={nextLabel}
-        onClick={() => scrollByPage(1)}
-        className={`${arrow} right-2 ${arrowClassName}`}
-      >
-        <ChevronRight size={20} />
-      </button>
+      {!atStart && (
+        <button
+          type="button"
+          aria-label={previousLabel}
+          onClick={() => scrollByPage(-1)}
+          className={`${arrow} left-2 ${arrowClassName}`}
+        >
+          <ChevronLeft size={20} />
+        </button>
+      )}
+      {!atEnd && (
+        <button
+          type="button"
+          aria-label={nextLabel}
+          onClick={() => scrollByPage(1)}
+          className={`${arrow} right-2 ${arrowClassName}`}
+        >
+          <ChevronRight size={20} />
+        </button>
+      )}
     </div>
   );
 }
