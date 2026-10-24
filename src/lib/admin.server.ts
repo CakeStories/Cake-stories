@@ -1181,3 +1181,27 @@ export const adminDeleteCoupon = createServerFn({ method: "POST" })
     await adminRest(`coupons?id=eq.${data.couponId}`, { method: "DELETE" });
     return { deleted: true };
   });
+
+/* ------------------------------------------------------------- newsletter --- */
+
+export type AdminSubscriber = { id: string; email: string; created_at: string };
+
+export const adminListSubscribers = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ token: z.string() }).parse(data))
+  .handler(async ({ data }) => {
+    await assertValidToken(data.token);
+    return adminRest<AdminSubscriber[]>(
+      "newsletter_subscribers?select=id,email,created_at&order=created_at.desc",
+    );
+  });
+
+/** For someone who asks to be taken off the list. */
+export const adminDeleteSubscriber = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z.object({ token: z.string(), subscriberId: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data }) => {
+    await assertValidToken(data.token);
+    await adminRest(`newsletter_subscribers?id=eq.${data.subscriberId}`, { method: "DELETE" });
+    return { deleted: true };
+  });

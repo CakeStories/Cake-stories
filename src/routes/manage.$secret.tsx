@@ -5,6 +5,7 @@ import {
   ArrowUp,
   Ban,
   Clock3,
+  Download,
   FolderPlus,
   ImageUp,
   Loader2,
@@ -38,7 +39,10 @@ import {
   adminDeleteBanner,
   adminDeleteCoupon,
   adminDeleteProduct,
+  adminDeleteSubscriber,
   adminDeleteVariant,
+  adminListSubscribers,
+  type AdminSubscriber,
   adminGetCatalog,
   adminGetStoreSettings,
   adminListAddons,
@@ -260,7 +264,7 @@ function Dashboard({
 
 
   const [tab, setTab] = useState<
-    "orders" | "products" | "banners" | "store" | "extras" | "coupons" | "categories"
+    "orders" | "products" | "banners" | "store" | "extras" | "coupons" | "newsletter" | "categories"
   >("orders");
 
   return (
@@ -286,6 +290,7 @@ function Dashboard({
             { id: "store", label: "Store & offers" },
             { id: "extras", label: "Extras & candles" },
             { id: "coupons", label: "Coupons" },
+            { id: "newsletter", label: "Newsletter" },
             { id: "categories", label: "Categories" },
           ] as const
         ).map((t) => (
@@ -323,6 +328,8 @@ function Dashboard({
         <ExtrasPanel token={token} onAuthError={onAuthError} />
       ) : tab === "coupons" ? (
         <CouponsPanel token={token} onAuthError={onAuthError} />
+      ) : tab === "newsletter" ? (
+        <NewsletterPanel token={token} onAuthError={onAuthError} />
       ) : (
         <CategoriesPanel token={token} onAuthError={onAuthError} onChanged={load} />
       )}
@@ -2511,6 +2518,135 @@ function AddonRow({
         <Trash2 size={13} />
       </Button>
       {status && <span className="text-xs text-muted-foreground">{status}</span>}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------- newsletter tab --- */
+
+/** "24 Oct 2026" style date for the list. */
+function subscribedOn(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function NewsletterPanel({ token, onAuthError }: { token: string; onAuthError: () => void }) {
+  const [subscribers, setSubscribers] = useState<AdminSubscriber[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setSubscribers(await adminListSubscribers({ data: { token } }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Couldn't load subscribers.";
+      setError(message);
+      if (message.toLowerCase().includes("session")) onAuthError();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const shown = subscribers.filter((s) => s.email.includes(query.trim().toLowerCase()));
+
+  // A CSV that Mailchimp, Brevo, Gmail contacts etc. can all import.
+  const downloadCsv = () => {
+    const rows = [["Email", "Subscribed on"], ...subscribers.map((s) => [s.email, s.created_at.slice(0, 10)])];
+    const csv = rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cake-stories-newsletter-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const remove = async (subscriber: AdminSubscriber) => {
+    if (!window.confirm(`Remove ${subscriber.email} from the newsletter list?`)) return;
+    try {
+      await adminDeleteSubscriber({ data: { token, subscriberId: subscriber.id } });
+      setSubscribers((list) => list.filter((s) => s.id !== subscriber.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't remove that subscriber.");
+    }
+  };
+
+  return (
+    <div className="mt-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-xl text-sm text-muted-foreground">
+          Emails from the "Get our newsletter updates" box in the site footer. Download the list and
+          import it into an email tool (Mailchimp, Brevo…) to send offers.
+        </p>
+        <div className="flex gap-2">
+          <Button size="sm" variant="secondary" onClick={() => void load()} disabled={loading}>
+            <RefreshCw size={13} /> Refresh
+          </Button>
+          <Button size="sm" onClick={downloadCsv} disabled={subscribers.length === 0}>
+            <Download size={13} /> Download as CSV
+          </Button>
+        </div>
+      </div>
+
+      {error && (
+        <p className="mt-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>
+      )}
+
+      {loading ? (
+        <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 size={15} className="animate-spin" /> Loading subscribers…
+        </p>
+      ) : subscribers.length === 0 ? (
+        <p className="mt-6 rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          No one has signed up yet.
+        </p>
+      ) : (
+        <>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-semibold">
+              {subscribers.length} {subscribers.length === 1 ? "subscriber" : "subscribers"}
+            </p>
+            <label className="relative">
+              <span className="sr-only">Search emails</span>
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search emails"
+                className="h-9 w-56 rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+            </label>
+          </div>
+          <ul className="mt-3 divide-y divide-border rounded-md border border-border">
+            {shown.map((s) => (
+              <li key={s.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                <span className="min-w-0 truncate font-medium">{s.email}</span>
+                <span className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
+                  {subscribedOn(s.created_at)}
+                  <button
+                    type="button"
+                    onClick={() => void remove(s)}
+                    aria-label={`Remove ${s.email}`}
+                    className="rounded p-1 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </span>
+              </li>
+            ))}
+            {shown.length === 0 && (
+              <li className="px-4 py-3 text-sm text-muted-foreground">No emails match "{query}".</li>
+            )}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
