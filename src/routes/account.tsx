@@ -18,6 +18,7 @@ function AccountPage() {
 
   const [orders, setOrders] = useState<OrderRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -29,22 +30,32 @@ function AccountPage() {
     if (!user) return;
     let cancelled = false;
 
+    setError(null);
+    setOrders(null);
     (async () => {
-      try {
-        const token = await getAccessToken();
-        if (!token) throw new Error("Your session expired. Please sign in again.");
-        const rows = await getMyOrders(token);
-        if (!cancelled) setOrders(rows);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Couldn't load your orders.");
+      const token = await getAccessToken().catch(() => null);
+      if (!token) {
+        if (!cancelled) setError("Your session expired. Please sign in again.");
+        return;
       }
+      // A patchy mobile connection often fails the first try — retry a couple of times quietly.
+      for (let tries = 0; tries < 3; tries++) {
+        try {
+          const rows = await getMyOrders(token);
+          if (!cancelled) setOrders(rows);
+          return;
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 800 * (tries + 1)));
+        }
+      }
+      if (!cancelled) setError("We couldn't load your order history just now.");
     })();
 
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, attempt]);
 
   if (loading || !user) {
     return (
@@ -81,18 +92,24 @@ function AccountPage() {
 
         <h2 className="mt-8 font-display text-xl">Your orders</h2>
 
-        {error && (
-          <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>
-        )}
-
-        {!orders && !error ? (
+        {error ? (
+          <div className="mt-6 rounded-md border border-dashed border-border p-8 text-center">
+            <PackageOpen className="mx-auto text-muted-foreground" size={28} />
+            <p className="mt-2 text-sm font-semibold">No previous orders to show</p>
+            <p className="mt-1 text-xs text-muted-foreground">{error}</p>
+            <Button className="mt-4" variant="secondary" onClick={() => setAttempt((n) => n + 1)}>
+              Try again
+            </Button>
+          </div>
+        ) : !orders ? (
           <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 size={15} className="animate-spin" /> Loading your orders…
           </p>
         ) : orders && orders.length === 0 ? (
           <div className="mt-6 rounded-md border border-dashed border-border p-8 text-center">
             <PackageOpen className="mx-auto text-muted-foreground" size={28} />
-            <p className="mt-2 text-sm text-muted-foreground">No orders yet.</p>
+            <p className="mt-2 text-sm font-semibold">No previous orders</p>
+            <p className="mt-1 text-xs text-muted-foreground">Your order history will appear here.</p>
             <Button className="mt-4" asChild>
               <Link to="/">Browse cakes</Link>
             </Button>

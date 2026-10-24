@@ -5,7 +5,8 @@ import { CakeSlice, ChevronLeft, ChevronRight, ShieldCheck, Star, Truck } from "
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { CakeCard } from "@/components/cake-card";
-import { LoopingRail } from "@/components/looping-rail";
+import { CakeTabsRail, type TabbedCake } from "@/components/cake-tabs-rail";
+import { characterIcon } from "@/lib/character-icons";
 import { ReviewsSection } from "@/components/reviews-section";
 import { CHARACTER_CAKES_CATEGORY_ID, getCakesForCategory, getCharacterCakes } from "@/lib/generic-cakes";
 import { COLLECTIONS } from "@/lib/collections";
@@ -218,9 +219,26 @@ function CakeStore() {
     queryFn: () => getCharacterCakes(CHARACTER_CAKES_CATEGORY_ID),
     staleTime: 5 * 60_000,
   });
-  const [activeCharacter, setActiveCharacter] = useState<string | null>(null);
-  const activeGroup =
-    characterGroups.find((group) => group.character === activeCharacter) ?? characterGroups[0];
+  // Same tabbed rail as the Kids Cakes page, one tab per character.
+  const characterTabCakes = useMemo<TabbedCake[]>(
+    () =>
+      characterGroups.flatMap((group) =>
+        group.cakes.map((cake) => ({
+          id: cake.id,
+          href: cake.href,
+          image: cake.image,
+          title: cake.name,
+          badge: cake.badge,
+          minPrice: cake.minPrice,
+          ...(cake.minPriceMrp != null && { minPriceMrp: cake.minPriceMrp }),
+          deliveryEstimate: cake.deliveryEstimate,
+          outOfStock: cake.outOfStock,
+          tabGroup: group.character,
+          enquiry: true,
+        })),
+      ),
+    [characterGroups],
+  );
 
   return (
     <main className="min-h-screen bg-background pb-20 md:pb-0">
@@ -353,9 +371,7 @@ function CakeStore() {
         </section>
 
         <section className="border-t border-border py-9">
-          <h2 className="text-2xl font-extrabold uppercase tracking-tight text-foreground sm:text-3xl">
-            Cakes for every celebration
-          </h2>
+          <h2 className="font-display text-3xl">Cakes for every celebration</h2>
           <div className="relative mt-5">
             <div
               ref={celebrationScrollRef}
@@ -521,59 +537,19 @@ function CakeStore() {
           </section>
         )}
 
-        {characterGroups.length > 0 && activeGroup && (
+        {characterTabCakes.length > 0 && (
           <section id="shop" className="scroll-mt-24 border-t border-border py-10">
             <h2 className="font-display text-3xl">Character Cake</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Pick a favourite character to see their cakes.
             </p>
 
-            <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
-              {characterGroups.map((group) => (
-                <button
-                  key={group.character}
-                  type="button"
-                  onClick={() => setActiveCharacter(group.character)}
-                  aria-pressed={group.character === activeGroup.character}
-                  className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                    group.character === activeGroup.character
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background hover:border-primary/50"
-                  }`}
-                >
-                  {group.character}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-6">
-              <LoopingRail
-                items={activeGroup.cakes}
-                getKey={(cake) => cake.id}
-                resetKey={activeGroup.character}
-                trackClassName="gap-3 pb-1"
-                arrowClassName="hidden sm:flex"
-                previousLabel="Previous cakes"
-                nextLabel="Next cakes"
-                renderItem={(cake, duplicate) => (
-                  <div className="w-44 sm:w-52">
-                    <CakeCard
-                      href={cake.href}
-                      image={cake.image}
-                      title={cake.name}
-                      badge={cake.badge}
-                      minPrice={cake.minPrice}
-                      {...(cake.minPriceMrp != null && { minPriceMrp: cake.minPriceMrp })}
-                      deliveryEstimate={cake.deliveryEstimate}
-                      outOfStock={cake.outOfStock}
-                      enquiry
-                      {...(duplicate && { tabIndex: -1 })}
-                      imageSizes="(min-width: 640px) 208px, 176px"
-                    />
-                  </div>
-                )}
-              />
-            </div>
+            <CakeTabsRail
+              cakes={characterTabCakes}
+              tabOrder={characterGroups.map((group) => group.character)}
+              ariaLabel="Shop by character"
+              icon={characterIcon}
+            />
           </section>
         )}
       </div>

@@ -463,11 +463,21 @@ function CheckoutPage() {
                 <Field
                   label="Phone number"
                   value={form.phone}
-                  onChange={updateField("phone")}
+                  // Digits only, 10 of them: letters and symbols are dropped as they're typed.
+                  onChange={(e) => {
+                    let phone = e.target.value.replace(/\D/g, "");
+                    // A pasted "+91 98765 43210" keeps the 10-digit number, not the country code.
+                    if (phone.length > 10 && phone.startsWith("91")) phone = phone.slice(2);
+                    phone = phone.slice(0, 10);
+                    setForm((f) => ({ ...f, phone }));
+                  }}
                   required
                   type="tel"
-                  maxLength={16}
-                  autoComplete="tel"
+                  inputMode="numeric"
+                  pattern="\d{10}"
+                  title="Enter your 10-digit mobile number"
+                  placeholder="10-digit mobile number"
+                  autoComplete="tel-national"
                 />
               </div>
               <Field

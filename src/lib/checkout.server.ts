@@ -273,7 +273,7 @@ const detailsSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(/^\+?[\d\s-]{10,16}$/, "Enter a valid phone number."),
+    .regex(/^\d{10}$/, "Enter your 10-digit mobile number."),
   email: z.string().trim().email("Enter a valid email address.").max(200),
   address: z.string().trim().max(500).default(""),
   city: z.string().trim().max(100).default(""),
