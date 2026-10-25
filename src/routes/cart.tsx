@@ -40,7 +40,7 @@ function CartPage() {
 
   return (
     <main className="min-h-screen bg-background pb-24 md:pb-0">
-      <SiteHeader />
+      <SiteHeader hideCategories />
 
       <div className="mx-auto max-w-5xl px-4 py-8 lg:px-6">
         <EditableText id="cart.title" as="h1" className="block font-display text-3xl sm:text-4xl">Your Cart</EditableText>

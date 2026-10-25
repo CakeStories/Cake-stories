@@ -61,7 +61,7 @@ function AccountPage() {
   if (loading || !user) {
     return (
       <main className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader hideCategories />
         <div className="mx-auto flex max-w-3xl items-center justify-center px-4 py-24 lg:px-6">
           <Loader2 size={20} className="animate-spin text-muted-foreground" />
         </div>
@@ -72,7 +72,7 @@ function AccountPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <SiteHeader />
+      <SiteHeader hideCategories />
 
       <div className="mx-auto max-w-3xl px-4 py-10 lg:px-6">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
