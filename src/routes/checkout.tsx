@@ -368,7 +368,7 @@ function CheckoutPage() {
   if (status === "success") {
     return (
       <main className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader hideCategories />
         <div className="mx-auto max-w-lg px-4 py-24 text-center lg:px-6">
           <CheckCircle2 className="mx-auto text-success" size={48} />
           <h1 className="mt-4 font-display text-3xl">Order placed!</h1>
@@ -404,7 +404,7 @@ function CheckoutPage() {
   if (items.length === 0) {
     return (
       <main className="min-h-screen bg-background">
-        <SiteHeader />
+        <SiteHeader hideCategories />
         <div className="mx-auto max-w-lg px-4 py-24 text-center lg:px-6">
           <h1 className="font-display text-3xl">Your cart is empty</h1>
           {priceNotice && <p className="mt-2 text-sm text-muted-foreground">{priceNotice}</p>}
@@ -420,7 +420,7 @@ function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-background pb-24 md:pb-0">
-      <SiteHeader />
+      <SiteHeader hideCategories />
 
       <div className="mx-auto max-w-5xl px-4 py-8 lg:px-6">
         <h1 className="font-display text-3xl sm:text-4xl">Checkout</h1>
