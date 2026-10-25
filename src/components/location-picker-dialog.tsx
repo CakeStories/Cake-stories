@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, LocateFixed, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/dialog";
 import { Button } from "@/components/button";
+import { EditableText, HiddenWording } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 
 // Marthandam, Kanniyakumari district, Tamil Nadu — sensible default center
 // for a shop that only delivers around this area.
@@ -71,6 +73,7 @@ export function LocationPickerDialog({
   onConfirm: (location: PickedLocation) => void;
   initial?: { lat: number; lng: number } | null;
 }) {
+  const { content } = useEditMode();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
@@ -243,7 +246,7 @@ export function LocationPickerDialog({
       <DialogContent className="max-w-2xl gap-0 p-0">
         <div className="border-b border-border px-5 py-4">
           <DialogTitle className="font-display text-xl font-normal">
-            Pin your delivery location
+            <EditableText id="map.title">Pin your delivery location</EditableText>
           </DialogTitle>
         </div>
 
@@ -263,7 +266,7 @@ export function LocationPickerDialog({
                     void runSearch();
                   }
                 }}
-                placeholder="Search for your area, street, or landmark"
+                placeholder={content["map.placeholder"] ?? "Search for your area, street, or landmark"}
                 className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/20"
               />
               {searchResults.length > 0 && (
@@ -288,7 +291,7 @@ export function LocationPickerDialog({
               disabled={searching}
               onClick={() => void runSearch()}
             >
-              {searching ? <Loader2 size={14} className="animate-spin" /> : "Search"}
+              {searching ? <Loader2 size={14} className="animate-spin" /> : <EditableText id="map.search">Search</EditableText>}
             </Button>
             <Button
               type="button"
@@ -310,7 +313,7 @@ export function LocationPickerDialog({
             {!ready && !loadError && (
               <div className="absolute inset-0 grid place-items-center bg-muted/80">
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 size={15} className="animate-spin" /> Loading map…
+                  <Loader2 size={15} className="animate-spin" /> <EditableText id="map.loading">Loading map…</EditableText>
                 </p>
               </div>
             )}
@@ -320,16 +323,18 @@ export function LocationPickerDialog({
               </div>
             )}
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Tap or drag the pin to the exact spot.
-          </p>
+          <EditableText id="map.hint" as="p" className="mt-1 block text-[11px] text-muted-foreground">Tap or drag the pin to the exact spot.</EditableText>
+          <HiddenWording
+            className="mt-2"
+            items={[{ id: "map.placeholder", fallback: "Search for your area, street, or landmark", label: "Search box hint" }]}
+          />
 
           <div className="mt-3 rounded-md bg-muted px-3 py-2 text-sm">{address}</div>
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            <EditableText id="map.cancel">Cancel</EditableText>
           </Button>
           <Button
             type="button"
@@ -344,7 +349,7 @@ export function LocationPickerDialog({
               onOpenChange(false);
             }}
           >
-            Confirm location
+            <EditableText id="map.confirm">Confirm location</EditableText>
           </Button>
         </div>
       </DialogContent>

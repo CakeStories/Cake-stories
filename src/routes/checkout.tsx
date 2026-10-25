@@ -23,6 +23,8 @@ import { pickupBranchFor, readSavedDeliveryLocation } from "@/lib/delivery-locat
 import { CheckoutInfoAccordion } from "@/components/checkout-info-accordion";
 import { DEFAULT_PRODUCT_IMAGE, onProductImageError } from "@/lib/image-fallback";
 import { resizedImageUrl } from "@/lib/supabase";
+import { EditableText, HiddenWording } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout | Cake Stories" }, { name: "robots", content: "noindex" }] }),
@@ -74,6 +76,9 @@ function formatRupees(amount: number): string {
 function CheckoutPage() {
   const { items, subtotal: localSubtotal, clear, applyPrices } = useCart();
   const { user, getAccessToken } = useAuth();
+  // Wording inside input hints and dropdowns (which can't hold editable text) is read from here.
+  const { content } = useEditMode();
+  const phoneHint = content["checkout.phoneHint"] ?? "10-digit mobile number";
   const [form, setForm] = useState<FormState>({
     name: "",
     phone: "",
@@ -371,29 +376,30 @@ function CheckoutPage() {
         <SiteHeader />
         <div className="mx-auto max-w-lg px-4 py-24 text-center lg:px-6">
           <CheckCircle2 className="mx-auto text-success" size={48} />
-          <h1 className="mt-4 font-display text-3xl">Order placed!</h1>
+          <EditableText id="checkout.done.title" as="h1" className="mt-4 block font-display text-3xl">Order placed!</EditableText>
           <p className="mt-2 text-sm text-muted-foreground">
-            Thanks{form.name ? `, ${form.name}` : ""} — we've received your order and will call you
-            on {form.phone} if we need anything. Keep the reference below in case you need to
-            contact us.
+            <EditableText id="checkout.done.thanks">Thanks</EditableText>
+            {form.name ? `, ${form.name}` : ""} —{" "}
+            <EditableText id="checkout.done.callYou">we've received your order and will call you on</EditableText> {form.phone}{" "}
+            <EditableText id="checkout.done.keepRef">if we need anything. Keep the reference below in case you need to contact us.</EditableText>
           </p>
           {confirmation && (
             <p className="mt-3 text-xs text-muted-foreground">
-              Order reference: <strong className="text-foreground">{confirmation.orderRef}</strong>{" "}
-              · Payment ID: {confirmation.paymentId}
+              <EditableText id="checkout.done.ref">Order reference</EditableText>: <strong className="text-foreground">{confirmation.orderRef}</strong>{" "}
+              · <EditableText id="checkout.done.paymentId">Payment ID</EditableText>: {confirmation.paymentId}
             </p>
           )}
           {user && (
             <p className="mt-2 text-xs text-muted-foreground">
-              You can also find it under{" "}
+              <EditableText id="checkout.done.findIt">You can also find it under</EditableText>{" "}
               <Link to="/account" className="underline">
-                My account
+                <EditableText id="checkout.done.account">My account</EditableText>
               </Link>
               .
             </p>
           )}
           <Button className="mt-6" asChild>
-            <Link to="/">Continue shopping</Link>
+            <Link to="/"><EditableText id="checkout.done.continue">Continue shopping</EditableText></Link>
           </Button>
         </div>
         <SiteFooter />
@@ -406,11 +412,11 @@ function CheckoutPage() {
       <main className="min-h-screen bg-background">
         <SiteHeader />
         <div className="mx-auto max-w-lg px-4 py-24 text-center lg:px-6">
-          <h1 className="font-display text-3xl">Your cart is empty</h1>
+          <EditableText id="cart.empty.title" as="h1" className="block font-display text-3xl">Your cart is empty</EditableText>
           {priceNotice && <p className="mt-2 text-sm text-muted-foreground">{priceNotice}</p>}
-          <p className="mt-2 text-sm text-muted-foreground">Add a cake before checking out.</p>
+          <EditableText id="checkout.empty.text" as="p" className="mt-2 block text-sm text-muted-foreground">Add a cake before checking out.</EditableText>
           <Button className="mt-6" asChild>
-            <Link to="/">Browse cakes</Link>
+            <Link to="/"><EditableText id="common.browseCakes">Browse cakes</EditableText></Link>
           </Button>
         </div>
         <SiteFooter />
@@ -423,7 +429,7 @@ function CheckoutPage() {
       <SiteHeader />
 
       <div className="mx-auto max-w-5xl px-4 py-8 lg:px-6">
-        <h1 className="font-display text-3xl sm:text-4xl">Checkout</h1>
+        <EditableText id="checkout.title" as="h1" className="block font-display text-3xl sm:text-4xl">Checkout</EditableText>
 
         {!user && (
           <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
@@ -432,9 +438,9 @@ function CheckoutPage() {
               search={{ redirect: "/checkout" }}
               className="font-medium text-primary underline"
             >
-              Sign in
+              <EditableText id="login.title.signin">Sign in</EditableText>
             </Link>{" "}
-            to see this order in your account later.
+            <EditableText id="checkout.signInHint">to see this order in your account later.</EditableText>
           </p>
         )}
 
@@ -447,13 +453,23 @@ function CheckoutPage() {
           </p>
         )}
 
+        <HiddenWording
+          className="mt-4"
+          items={[
+            { id: "checkout.phoneHint", fallback: "10-digit mobile number", label: "Phone box hint" },
+            { id: "checkout.promo", fallback: "Promo code", label: "Promo code box hint" },
+            { id: "checkout.chooseDate", fallback: "Choose a date", label: "Before a date is picked" },
+            { id: "checkout.tooSoon", fallback: "too soon", label: "Time slots that are too soon" },
+          ]}
+        />
+
         <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div>
             <form id="checkout-form" onSubmit={handlePay} className="space-y-4">
-              <h2 className="font-display text-xl">Delivery details</h2>
+              <EditableText id="checkout.details" as="h2" className="block font-display text-xl">Delivery details</EditableText>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
-                  label="Full name"
+                  label={<EditableText id="checkout.name">Full name</EditableText>}
                   value={form.name}
                   onChange={updateField("name")}
                   required
@@ -461,7 +477,7 @@ function CheckoutPage() {
                   autoComplete="name"
                 />
                 <Field
-                  label="Phone number"
+                  label={<EditableText id="checkout.phone">Phone number</EditableText>}
                   value={form.phone}
                   // Digits only, 10 of them: letters and symbols are dropped as they're typed.
                   onChange={(e) => {
@@ -476,12 +492,12 @@ function CheckoutPage() {
                   inputMode="numeric"
                   pattern="\d{10}"
                   title="Enter your 10-digit mobile number"
-                  placeholder="10-digit mobile number"
+                  placeholder={phoneHint}
                   autoComplete="tel-national"
                 />
               </div>
               <Field
-                label="Email"
+                label={<EditableText id="login.email">Email</EditableText>}
                 value={form.email}
                 onChange={updateField("email")}
                 required
@@ -506,7 +522,7 @@ function CheckoutPage() {
                         : "border-input text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {option.label}
+                    <EditableText id={`checkout.mode.${option.id}`}>{option.label}</EditableText>
                   </button>
                 ))}
               </div>
@@ -516,7 +532,7 @@ function CheckoutPage() {
                   <div className="flex items-end gap-2">
                     <div className="flex-1">
                       <Field
-                        label="Delivery address"
+                        label={<EditableText id="checkout.address">Delivery address</EditableText>}
                         value={form.address}
                         onChange={updateField("address")}
                         required
@@ -525,12 +541,12 @@ function CheckoutPage() {
                       />
                     </div>
                     <Button type="button" variant="outline" onClick={() => setMapOpen(true)}>
-                      <MapPin size={15} /> Choose on map
+                      <MapPin size={15} /> <EditableText id="checkout.map">Choose on map</EditableText>
                     </Button>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field
-                      label="City"
+                      label={<EditableText id="checkout.city">City</EditableText>}
                       value={form.city}
                       onChange={updateField("city")}
                       required
@@ -538,7 +554,7 @@ function CheckoutPage() {
                       autoComplete="address-level2"
                     />
                     <Field
-                      label="Pincode"
+                      label={<EditableText id="checkout.pincode">Pincode</EditableText>}
                       value={form.pincode}
                       onChange={updateField("pincode")}
                       required
@@ -551,9 +567,14 @@ function CheckoutPage() {
                   </div>
                   {zone && zoneChecked && zone.ok && (
                     <p role="status" className="text-xs font-medium text-success">
-                      {zone.via === "map" && zone.km != null
-                        ? `✓ We deliver here — about ${zone.km} km from our ${zone.shop} shop.`
-                        : "✓ We deliver cakes to this pincode."}
+                      {zone.via === "map" && zone.km != null ? (
+                        <>
+                          ✓ <EditableText id="checkout.zone.about">We deliver here — about</EditableText> {zone.km}{" "}
+                          <EditableText id="checkout.zone.kmFrom">km from our</EditableText> {zone.shop} <EditableText id="checkout.zone.shop">shop.</EditableText>
+                        </>
+                      ) : (
+                        <>✓ <EditableText id="checkout.zone.pincode">We deliver cakes to this pincode.</EditableText></>
+                      )}
                     </p>
                   )}
                   {zone && zoneChecked && !zone.ok && (
@@ -561,7 +582,7 @@ function CheckoutPage() {
                       role="alert"
                       className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2"
                     >
-                      <p className="text-sm font-semibold text-destructive">Not delivering to this location</p>
+                      <EditableText id="checkout.zone.no" as="p" className="block text-sm font-semibold text-destructive">Not delivering to this location</EditableText>
                       <Button
                         type="button"
                         size="sm"
@@ -571,19 +592,17 @@ function CheckoutPage() {
                           setForm((f) => ({ ...f, fulfillmentType: "pickup" }));
                         }}
                       >
-                        Choose store pickup
+                        <EditableText id="checkout.zone.pickup">Choose store pickup</EditableText>
                       </Button>
                     </div>
                   )}
                   {quote && !hasCake && (
-                    <p className="text-xs text-muted-foreground">
-                      Party Essentials are delivered anywhere in India.
-                    </p>
+                    <EditableText id="checkout.panIndia" as="p" className="block text-xs text-muted-foreground">Party Essentials are delivered anywhere in India.</EditableText>
                   )}
                 </>
               ) : (
                 <label className="block text-sm">
-                  <span className="mb-1 block font-medium text-foreground">Pick up from</span>
+                  <EditableText id="checkout.pickupFrom" as="span" className="mb-1 block font-medium text-foreground">Pick up from</EditableText>
                   <select
                     value={form.pickupBranch}
                     onChange={(e) => setForm((f) => ({ ...f, pickupBranch: e.target.value }))}
@@ -601,7 +620,11 @@ function CheckoutPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm">
                   <span className="mb-1 block font-medium text-foreground">
-                    {form.fulfillmentType === "pickup" ? "Pickup date" : "Delivery date"}
+                    {form.fulfillmentType === "pickup" ? (
+                      <EditableText id="checkout.pickupDate">Pickup date</EditableText>
+                    ) : (
+                      <EditableText id="checkout.deliveryDate">Delivery date</EditableText>
+                    )}
                   </span>
                   <input
                     type="date"
@@ -614,7 +637,11 @@ function CheckoutPage() {
                 </label>
                 <label className="block text-sm">
                   <span className="mb-1 block font-medium text-foreground">
-                    {form.fulfillmentType === "pickup" ? "Pickup time" : "Delivery time"}
+                    {form.fulfillmentType === "pickup" ? (
+                      <EditableText id="checkout.pickupTime">Pickup time</EditableText>
+                    ) : (
+                      <EditableText id="checkout.deliveryTime">Delivery time</EditableText>
+                    )}
                   </span>
                   <select
                     value={form.deliveryTime}
@@ -627,7 +654,7 @@ function CheckoutPage() {
                       return (
                         <option key={slot} value={slot} disabled={tooSoon}>
                           {slot}
-                          {tooSoon ? " (too soon)" : ""}
+                          {tooSoon ? ` (${content["checkout.tooSoon"] ?? "too soon"})` : ""}
                         </option>
                       );
                     })}
@@ -637,8 +664,7 @@ function CheckoutPage() {
 
               {needsAdvanceNotice ? (
                 <p className="-mt-2 text-xs text-muted-foreground">
-                  Wedding and Kids cakes need at least 24 hours to prepare, so the earliest we can
-                  deliver this order is{" "}
+                  <EditableText id="checkout.notice.advance">Wedding and Kids cakes need at least 24 hours to prepare, so the earliest we can deliver this order is</EditableText>{" "}
                   <strong className="text-foreground">
                     {new Date(`${minDeliveryDate}T00:00:00`).toLocaleDateString("en-IN", {
                       day: "numeric",
@@ -651,12 +677,13 @@ function CheckoutPage() {
                 <p className="-mt-2 text-xs text-muted-foreground">
                   {isSameDayStillBookable() ? (
                     <>
-                      Same-day delivery is open until <strong className="text-foreground">3:00 PM</strong> —
-                      order now and we'll show only the slots we can still make today.
+                      <EditableText id="checkout.notice.sameDay">Same-day delivery is open until</EditableText>{" "}
+                      <strong className="text-foreground"><EditableText id="checkout.notice.cutoff">3:00 PM</EditableText></strong> —{" "}
+                      <EditableText id="checkout.notice.slots">order now and we'll show only the slots we can still make today.</EditableText>
                     </>
                   ) : (
                     <>
-                      Today's same-day window has closed for new orders — earliest delivery is now{" "}
+                      <EditableText id="checkout.notice.closed">Today's same-day window has closed for new orders — earliest delivery is now</EditableText>{" "}
                       <strong className="text-foreground">
                         {new Date(`${minDeliveryDate}T00:00:00`).toLocaleDateString("en-IN", {
                           day: "numeric",
@@ -686,19 +713,21 @@ function CheckoutPage() {
               >
                 {status === "processing" ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Processing…
+                    <Loader2 size={16} className="animate-spin" /> <EditableText id="checkout.processing">Processing…</EditableText>
                   </>
                 ) : quoting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Checking prices…
+                    <Loader2 size={16} className="animate-spin" /> <EditableText id="checkout.checking">Checking prices…</EditableText>
                   </>
                 ) : (
-                  `Pay ${formatRupees(total)} with Razorpay`
+                  <>
+                    <EditableText id="checkout.pay">Pay</EditableText> {formatRupees(total)} <EditableText id="checkout.withRazorpay">with Razorpay</EditableText>
+                  </>
                 )}
               </Button>
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <ShieldCheck size={14} className="text-primary" /> Payments are handled securely by
-                Razorpay — we never see your card details.
+                <ShieldCheck size={14} className="text-primary" />
+                <EditableText id="checkout.secure">Payments are handled securely by Razorpay — we never see your card details.</EditableText>
               </p>
             </form>
 
@@ -706,7 +735,7 @@ function CheckoutPage() {
           </div>
 
           <aside className="h-fit rounded-md border border-border p-5">
-            <h2 className="font-display text-xl">Order Summary</h2>
+            <EditableText id="cart.summary" as="h2" className="block font-display text-xl">Order Summary</EditableText>
             <ul className="mt-4 space-y-3">
               {items.map((item) => (
                 <li key={item.id} className="flex items-start gap-3 text-sm">
@@ -721,13 +750,15 @@ function CheckoutPage() {
                     {item.variant && (
                       <p className="text-xs text-muted-foreground">{item.variant}</p>
                     )}
-                    <p className="text-xs text-muted-foreground">Qty {item.quantity}</p>
+                    <p className="text-xs text-muted-foreground">
+                      <EditableText id="checkout.qty">Qty</EditableText> {item.quantity}
+                    </p>
                     {item.note && (
                       <p className="text-xs italic text-muted-foreground">"{item.note}"</p>
                     )}
                     {item.specialInstructions && (
                       <p className="text-xs text-muted-foreground">
-                        Note: {item.specialInstructions}
+                        <EditableText id="cart.note">Note</EditableText>: {item.specialInstructions}
                       </p>
                     )}
                   </div>
@@ -738,7 +769,7 @@ function CheckoutPage() {
 
             <div className="mt-4 space-y-1 border-t border-border pt-4 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">
-                {form.fulfillmentType === "pickup" ? "Pickup" : "Delivery"}
+                {form.fulfillmentType === "pickup" ? <EditableText id="checkout.pickup">Pickup</EditableText> : <EditableText id="cart.delivery">Delivery</EditableText>}
                 {form.fulfillmentType === "pickup" && ` · ${form.pickupBranch}`}
               </p>
               <p>
@@ -748,7 +779,7 @@ function CheckoutPage() {
                       month: "short",
                       year: "numeric",
                     })
-                  : "Choose a date"}
+                  : (content["checkout.chooseDate"] ?? "Choose a date")}
                 {" · "}
                 {form.deliveryTime}
               </p>
@@ -758,10 +789,10 @@ function CheckoutPage() {
               {appliedCode && coupon?.status === "applied" ? (
                 <div className="flex items-center justify-between rounded-md bg-success/10 px-3 py-2 text-sm text-success">
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Tag size={14} /> {coupon.code} applied
+                    <Tag size={14} /> {coupon.code} <EditableText id="account.applied">applied</EditableText>
                   </span>
                   <button type="button" onClick={removeCoupon} className="text-xs underline">
-                    Remove
+                    <EditableText id="checkout.remove">Remove</EditableText>
                   </button>
                 </div>
               ) : (
@@ -776,7 +807,7 @@ function CheckoutPage() {
                           applyCoupon();
                         }
                       }}
-                      placeholder="Promo code"
+                      placeholder={content["checkout.promo"] ?? "Promo code"}
                       maxLength={40}
                       className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm uppercase tracking-wide outline-none focus:border-primary focus:ring-2 focus:ring-ring/20"
                     />
@@ -789,7 +820,7 @@ function CheckoutPage() {
                       {quoting && appliedCode ? (
                         <Loader2 size={14} className="animate-spin" />
                       ) : (
-                        "Apply"
+                        <EditableText id="checkout.apply">Apply</EditableText>
                       )}
                     </Button>
                   </div>
@@ -797,7 +828,7 @@ function CheckoutPage() {
                     <p className="mt-1.5 flex items-center justify-between gap-2 text-xs text-destructive">
                       <span>{coupon.message}</span>
                       <button type="button" onClick={removeCoupon} className="shrink-0 underline">
-                        Remove
+                        <EditableText id="checkout.remove">Remove</EditableText>
                       </button>
                     </p>
                   )}
@@ -807,27 +838,27 @@ function CheckoutPage() {
 
             <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Subtotal</dt>
+                <dt className="text-muted-foreground"><EditableText id="cart.subtotal">Subtotal</EditableText></dt>
                 <dd>₹{subtotal}</dd>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-success">
-                  <dt>Discount</dt>
+                  <dt><EditableText id="checkout.discount">Discount</EditableText></dt>
                   <dd>−₹{discountAmount}</dd>
                 </div>
               )}
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">
-                  {form.fulfillmentType === "pickup" ? "Pickup" : "Delivery"}
+                  {form.fulfillmentType === "pickup" ? <EditableText id="checkout.pickup">Pickup</EditableText> : <EditableText id="cart.delivery">Delivery</EditableText>}
                 </dt>
-                <dd>{deliveryFee === 0 ? "Free" : `₹${deliveryFee}`}</dd>
+                <dd>{deliveryFee === 0 ? <EditableText id="cart.free">Free</EditableText> : `₹${deliveryFee}`}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">GST</dt>
+                <dt className="text-muted-foreground"><EditableText id="checkout.gst">GST</EditableText></dt>
                 <dd>{quoteIsCurrent ? formatRupees(gst) : "…"}</dd>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
-                <dt>Total</dt>
+                <dt><EditableText id="account.total">Total</EditableText></dt>
                 <dd>
                   {quoting ? <Loader2 size={14} className="inline animate-spin" /> : formatRupees(total)}
                 </dd>
@@ -856,7 +887,7 @@ function CheckoutPage() {
 function Field({
   label,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: React.ReactNode }) {
   return (
     <label className="block text-sm">
       <span className="mb-1 block font-medium text-foreground">{label}</span>

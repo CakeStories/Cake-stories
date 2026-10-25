@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import type { Banner } from "@/lib/banners";
 import { resizedImageUrl } from "@/lib/supabase";
+import { EditableImage } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 
 function BannerImage({
   banner,
@@ -11,23 +13,29 @@ function BannerImage({
   className: string;
   imageClassName?: string;
 }) {
+  const { saveBannerImage } = useEditMode();
+  const image = (
+    <EditableImage fallback={banner.image} onSave={(url) => saveBannerImage(banner.id, url)}>
+      {(src) => <img src={resizedImageUrl(src, 1280, 75)} alt="" loading="lazy" className={imageClassName} />}
+    </EditableImage>
+  );
   return banner.external ? (
     <a
       href={banner.href}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={banner.label}
-      className={`block overflow-hidden rounded-lg ${className}`}
+      className={`relative block overflow-hidden rounded-lg ${className}`}
     >
-      <img src={resizedImageUrl(banner.image, 1280, 75)} alt="" loading="lazy" className={imageClassName} />
+      {image}
     </a>
   ) : (
     <Link
       to={banner.href}
       aria-label={banner.label}
-      className={`block overflow-hidden rounded-lg ${className}`}
+      className={`relative block overflow-hidden rounded-lg ${className}`}
     >
-      <img src={resizedImageUrl(banner.image, 1280, 75)} alt="" loading="lazy" className={imageClassName} />
+      {image}
     </Link>
   );
 }

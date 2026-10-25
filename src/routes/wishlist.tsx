@@ -8,6 +8,7 @@ import { useWishlist } from "@/lib/wishlist";
 import { isEnquiryHref } from "@/lib/enquiry";
 import { DEFAULT_PRODUCT_IMAGE, onProductImageError } from "@/lib/image-fallback";
 import { resizedImageUrl } from "@/lib/supabase";
+import { EditableText } from "@/components/editable";
 
 export const Route = createFileRoute("/wishlist")({
   head: () => ({ meta: [{ title: "Your Wishlist | Cake Stories" }, { name: "robots", content: "noindex" }] }),
@@ -22,17 +23,15 @@ function WishlistPage() {
       <SiteHeader />
 
       <div className="mx-auto max-w-5xl px-4 py-8 lg:px-6">
-        <h1 className="font-display text-3xl sm:text-4xl">Your Wishlist</h1>
+        <EditableText id="wishlist.title" as="h1" className="block font-display text-3xl sm:text-4xl">Your Wishlist</EditableText>
 
         {items.length === 0 ? (
           <div className="my-16 text-center">
             <Heart className="mx-auto text-muted-foreground" size={36} />
-            <h3 className="mt-3 font-display text-2xl">Your wishlist is empty</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Tap "Add to Wishlist" on any cake to save it here for later.
-            </p>
+            <EditableText id="wishlist.empty.title" as="h3" className="mt-3 block font-display text-2xl">Your wishlist is empty</EditableText>
+            <EditableText id="wishlist.empty.text" as="p" className="mt-1 block text-sm text-muted-foreground">Tap "Add to Wishlist" on any cake to save it here for later.</EditableText>
             <Button className="mt-4" asChild>
-              <Link to="/">Browse cakes</Link>
+              <Link to="/"><EditableText id="common.browseCakes">Browse cakes</EditableText></Link>
             </Button>
           </div>
         ) : (
@@ -53,14 +52,14 @@ function WishlistPage() {
                   </Link>
                   <div className="mt-1">
                     {item.enquiry || isEnquiryHref(item.href) ? (
-                      <span className="text-xs font-semibold text-primary">Enquire for price</span>
+                      <EditableText id="card.enquire" as="span" className="text-xs font-semibold text-primary">Enquire for price</EditableText>
                     ) : (
                       <PriceTag price={item.price} mrp={item.mrp} size="sm" />
                     )}
                   </div>
                   <div className="mt-3 flex gap-2">
                     <Button size="sm" className="flex-1" asChild>
-                      <Link to={item.href}>View</Link>
+                      <Link to={item.href}><EditableText id="wishlist.view">View</EditableText></Link>
                     </Button>
                     <Button
                       size="sm"

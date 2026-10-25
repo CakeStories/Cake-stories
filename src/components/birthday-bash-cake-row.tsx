@@ -5,6 +5,8 @@ import { cakeEnquiryLink } from "@/lib/whatsapp";
 import { onProductImageError } from "@/lib/image-fallback";
 import type { GenericCake } from "@/lib/generic-cakes";
 import { responsiveImage } from "@/lib/supabase";
+import { EditableImage, EditableText, EditableValue } from "@/components/editable";
+import { useEditMode, useSiteText } from "@/lib/edit-mode";
 
 /**
  * One Birthday Bash cake, shown in full rather than linking to its own page —
@@ -15,6 +17,11 @@ import { responsiveImage } from "@/lib/supabase";
 export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
   const [flavour, setFlavour] = useState<string | undefined>(undefined);
   const [size, setSize] = useState<string | undefined>(undefined);
+  const { saveProduct } = useEditMode();
+  const save = (field: "name" | "description" | "badge") => (value: string) => saveProduct(cake.id, { [field]: value });
+  // Dropdown first lines can't hold editable text, so they're edited with a ✎ beside the label.
+  const chooseFlavour = useSiteText("bash.chooseFlavour", "Choose a flavour");
+  const chooseSize = useSiteText("bash.chooseSize", "Choose a size");
 
   const enquireHref = cakeEnquiryLink(
     cake.name,
@@ -32,42 +39,57 @@ export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
       <div
         className={`relative overflow-hidden rounded-lg bg-muted ${keepSquareImage ? "" : "sm:h-full"}`}
       >
-        <img
-          {...responsiveImage(cake.image, 640, "(min-width: 640px) 50vw, 100vw")}
-          alt={cake.name}
-          onError={onProductImageError}
-          // In-flow square on phones (iOS Safari collapses an aspect-ratio box that only
-          // holds an absolutely positioned image); stretched to the text column on wider screens.
-          className={`block aspect-square w-full object-contain ${keepSquareImage ? "" : "sm:absolute sm:inset-0 sm:aspect-auto sm:h-full"}`}
-        />
+        <EditableImage
+          fallback={cake.image}
+          buttonPosition="right-3 top-3"
+          onSave={(image_url) => saveProduct(cake.id, { image_url })}
+        >
+          {(src) => (
+            <img
+              {...responsiveImage(src, 640, "(min-width: 640px) 50vw, 100vw")}
+              alt={cake.name}
+              onError={onProductImageError}
+              // In-flow square on phones (iOS Safari collapses an aspect-ratio box that only
+              // holds an absolutely positioned image); stretched to the text column on wider screens.
+              className={`block aspect-square w-full object-contain ${keepSquareImage ? "" : "sm:absolute sm:inset-0 sm:aspect-auto sm:h-full"}`}
+            />
+          )}
+        </EditableImage>
         {cake.badge && (
           <span className="absolute left-3 top-3 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-bold uppercase text-secondary-foreground">
-            {cake.badge}
+            <EditableText onSave={save("badge")}>{cake.badge}</EditableText>
           </span>
         )}
       </div>
 
       <div className="flex flex-col justify-center">
-        <h2 className="font-display text-2xl sm:text-3xl">{cake.name}</h2>
+        <EditableText as="h2" className="block font-display text-2xl sm:text-3xl" onSave={save("name")}>
+          {cake.name}
+        </EditableText>
 
         {/* Customisable table kit — no price on the site; agreed on WhatsApp. */}
-        <p className="mt-2 text-sm font-semibold text-primary">Enquire for price</p>
+        <EditableText id="card.enquire" as="p" className="mt-2 block text-sm font-semibold text-primary">
+          Enquire for price
+        </EditableText>
 
-        {cake.description && (
-          <p className="mt-3 text-sm leading-6 text-foreground/80">{cake.description}</p>
-        )}
+        <EditableText as="p" multiline className="mt-3 block text-sm leading-6 text-foreground/80" onSave={save("description")}>
+          {cake.description ?? ""}
+        </EditableText>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {cake.flavours.length > 0 && (
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-foreground">Flavour</span>
+              <span className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
+                <EditableText id="panel.flavour">Flavour</EditableText>
+                <EditableValue id="bash.chooseFlavour" fallback="Choose a flavour" label="Flavour dropdown's first line" />
+              </span>
               <span className="relative block">
                 <select
                   value={flavour ?? ""}
                   onChange={(e) => setFlavour(e.target.value || undefined)}
                   className="h-11 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option value="">Choose a flavour</option>
+                  <option value="">{chooseFlavour}</option>
                   {cake.flavours.map((f) => (
                     <option key={f} value={f}>
                       {flavourLabel(f)}
@@ -84,14 +106,17 @@ export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
 
           {cake.sizes.length > 0 && (
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-foreground">Size</span>
+              <span className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
+                <EditableText id="panel.size">Size</EditableText>
+                <EditableValue id="bash.chooseSize" fallback="Choose a size" label="Size dropdown's first line" />
+              </span>
               <span className="relative block">
                 <select
                   value={size ?? ""}
                   onChange={(e) => setSize(e.target.value || undefined)}
                   className="h-11 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option value="">Choose a size</option>
+                  <option value="">{chooseSize}</option>
                   {cake.sizes.map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -113,7 +138,8 @@ export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
           rel="noopener noreferrer"
           className="mt-6 inline-flex w-fit items-center gap-2 rounded-md bg-[#25D366] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02]"
         >
-          <MessageCircle size={17} /> Enquire Now
+          <MessageCircle size={17} />
+          <EditableText id="bash.enquireNow">Enquire Now</EditableText>
         </a>
       </div>
     </article>

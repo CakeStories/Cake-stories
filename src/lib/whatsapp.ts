@@ -4,10 +4,22 @@
  * checking out). Keep this number in sync with what the shop owner gives out
  * elsewhere; it's deliberately separate from the homepage's WhatsApp banner.
  */
-const CUSTOM_CAKE_WHATSAPP_NUMBER = "917808780852";
+export const DEFAULT_WHATSAPP_NUMBER = "+91 78087 80852";
+let whatsappNumber = DEFAULT_WHATSAPP_NUMBER;
+
+/** Set from the website editor's "WhatsApp number" (see EditModeProvider). */
+export function setWhatsAppNumber(number: string | undefined) {
+  whatsappNumber = number?.trim() || DEFAULT_WHATSAPP_NUMBER;
+}
+
+/** wa.me wants digits only, with the country code. */
+export function whatsappDigits(number: string = whatsappNumber): string {
+  const digits = number.replace(/\D/g, "");
+  return digits.length === 10 ? `91${digits}` : digits;
+}
 
 function whatsappLink(message: string): string {
-  return `https://wa.me/${CUSTOM_CAKE_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${whatsappDigits()}?text=${encodeURIComponent(message)}`;
 }
 
 /** The generic "Chat with us" banner at the top of the page — not tied to any one cake. */

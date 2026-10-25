@@ -159,6 +159,11 @@ async function fetchAllPages<T>(url: string, headers: Record<string, string>): P
 const READ_CACHE_MS = typeof window === "undefined" ? 60_000 : 5 * 60_000;
 const readCache = new Map<string, { at: number; rows: Promise<unknown[]> }>();
 
+/** Forget every cached read — after the shop owner changes the catalogue, so the change shows at once. */
+export function clearReadCache() {
+  readCache.clear();
+}
+
 function cachedFetchAllPages<T>(url: string, headers: Record<string, string>): Promise<T[]> {
   const hit = readCache.get(url);
   if (hit && Date.now() - hit.at < READ_CACHE_MS) {

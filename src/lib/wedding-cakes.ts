@@ -16,6 +16,10 @@ export type WeddingCakeVariant = {
 };
 
 export type WeddingCake = {
+  /** The catalogue product's id (for the website editor). */
+  productId: string;
+  /** Set in /manage or the website editor; the page has a default line when blank. */
+  description: string | null;
   code: string;
   name: string;
   slug: string;
@@ -151,6 +155,8 @@ export async function getWeddingCakes(): Promise<WeddingCake[]> {
       const minPriceVariant = mappedVariants.find((variant) => variant.price === minPrice);
 
       return {
+        productId: product.id,
+        description: product.description ?? null,
         code: codeFromSlug(product.slug),
         name: product.name,
         slug: product.slug,

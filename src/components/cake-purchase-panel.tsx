@@ -20,6 +20,8 @@ import { CAKE_MESSAGE_MAX, INSTRUCTIONS_MAX, type CartItemRef } from "@/lib/pric
 import type { PartyEssentialItem } from "@/lib/party-essentials";
 import { cakeEnquiryLink } from "@/lib/whatsapp";
 import { resizedImageUrl } from "@/lib/supabase";
+import { AdminShortcut, EditableImage, EditableText, EditableValue } from "@/components/editable";
+import { useEditMode, useSiteText } from "@/lib/edit-mode";
 
 export function CakePurchasePanel({
   slug,
@@ -36,6 +38,7 @@ export function CakePurchasePanel({
   outOfStock = false,
   partyEssentials,
   enquiry = false,
+  productId,
 }: {
   slug: string;
   /** Route prefix used to build the cart line's href, e.g. "/birthday-cake", "/wedding-cake", "/kids-cake". */
@@ -71,7 +74,18 @@ export function CakePurchasePanel({
    * the customer picks flavour/size, adds a message, and enquires on WhatsApp.
    */
   enquiry?: boolean;
+  /** The catalogue product: lets the website editor change its name, description and badge here. */
+  productId?: string;
 }) {
+  const { saveProduct } = useEditMode();
+  const saveField = productId
+    ? (field: "name" | "description" | "badge") => (value: string) => saveProduct(productId, { [field]: value })
+    : null;
+  const messageHint = useSiteText("panel.message.placeholder", "e.g. Happy Birthday Priya!");
+  const instructionsHint = useSiteText(
+    "panel.instructions.placeholder",
+    "e.g. Please call before delivery, egg-free preferred, leave at the gate…",
+  );
   const { items: cartItems, addItem, setItem, setQuantity: setCartQuantity } = useCart();
   const navigate = useNavigate();
   const wishlist = useWishlist();
@@ -188,35 +202,56 @@ export function CakePurchasePanel({
     <div>
       {outOfStock ? (
         <span className="mb-3 inline-block rounded-full bg-destructive px-3 py-1 text-xs font-bold uppercase text-destructive-foreground">
-          Out of Stock
+          <EditableText id="card.outOfStock">Out of Stock</EditableText>
         </span>
       ) : (
         badge && (
           <span className="mb-3 inline-block rounded-full bg-secondary px-3 py-1 text-xs font-bold uppercase text-secondary-foreground">
-            {badge}
+            <EditableText {...(saveField && { onSave: saveField("badge") })}>{badge}</EditableText>
           </span>
         )
       )}
-      <h1 className="break-words font-display text-3xl sm:text-4xl">{title}</h1>
+      <EditableText
+        as="h1"
+        className="block break-words font-display text-3xl sm:text-4xl"
+        {...(saveField && { onSave: saveField("name") })}
+      >
+        {title}
+      </EditableText>
 
       <div className="mt-3">
         {enquiryMode ? (
-          <p className="text-sm text-muted-foreground">
-            Customise it your way — choose your flavour and size, then enquire on WhatsApp for the
-            price, toppings and decorations.
-          </p>
+          <EditableText id="panel.enquiryIntro" as="p" className="block text-sm text-muted-foreground">
+            Customise it your way — choose your flavour and size, then enquire on WhatsApp for the price, toppings and decorations.
+          </EditableText>
         ) : price !== undefined ? (
-          <PriceTag price={price} mrp={effective?.mrp ?? null} size="lg" />
+          <span className="flex items-center gap-2">
+            <PriceTag price={price} mrp={effective?.mrp ?? null} size="lg" />
+            <AdminShortcut label="Change prices" search={{ tab: "products", q: title }} />
+          </span>
         ) : (
-          <strong className="text-2xl">Select options</strong>
+          <EditableText id="panel.selectOptions" as="strong" className="text-2xl">
+            Select options
+          </EditableText>
         )}
       </div>
 
-      {description && <p className="mt-4 text-sm leading-6 text-foreground/80">{description}</p>}
+      {(description || saveField) && (
+        <EditableText
+          as="p"
+          multiline
+          className="mt-4 block text-sm leading-6 text-foreground/80"
+          {...(saveField && { onSave: saveField("description") })}
+        >
+          {description || ""}
+        </EditableText>
+      )}
 
       {showFamilySelector && (
         <label className="mt-6 block text-sm">
-          <span className="mb-1 block font-medium text-foreground">Flavour</span>
+          <EditableText id="panel.flavour" className="mb-1 block font-medium text-foreground">
+            Flavour
+          </EditableText>
           <span className="relative block">
             <select
               value={slug}
@@ -239,7 +274,9 @@ export function CakePurchasePanel({
 
       {showVariantFlavourSelector && (
         <label className="mt-6 block text-sm">
-          <span className="mb-1 block font-medium text-foreground">Flavour</span>
+          <EditableText id="panel.flavour" className="mb-1 block font-medium text-foreground">
+            Flavour
+          </EditableText>
           <span className="relative block">
             <select
               value={flavour}
@@ -262,7 +299,9 @@ export function CakePurchasePanel({
 
       {sizes.length > 1 ? (
         <label className="mt-4 block text-sm">
-          <span className="mb-1 block font-medium text-foreground">Size</span>
+          <EditableText id="panel.size" className="mb-1 block font-medium text-foreground">
+            Size
+          </EditableText>
           <span className="relative block">
             <select
               value={size}
@@ -282,30 +321,41 @@ export function CakePurchasePanel({
           </span>
         </label>
       ) : (
-        sizes[0] && <p className="mt-4 text-sm text-muted-foreground">Size: {sizes[0]}</p>
+        sizes[0] && (
+          <p className="mt-4 text-sm text-muted-foreground">
+            <EditableText id="panel.size">Size</EditableText>: {sizes[0]}
+          </p>
+        )
       )}
 
       <div className="mt-5 flex items-center gap-3 text-xs font-medium text-success">
         <Clock3 size={14} />
-        {needsAdvanceNotice ? "Minimum 24 hours' notice for delivery" : "Same-day delivery available"}
+        {needsAdvanceNotice ? (
+          <EditableText id="panel.notice.advance">Minimum 24 hours' notice for delivery</EditableText>
+        ) : (
+          <EditableText id="panel.notice.sameDay">Same-day delivery available</EditableText>
+        )}
       </div>
       <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-        <ShieldCheck size={14} className="text-primary" /> Freshly baked after you order
+        <ShieldCheck size={14} className="text-primary" />
+        <EditableText id="panel.freshlyBaked">Freshly baked after you order</EditableText>
       </div>
       <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-        <Truck size={14} className="text-primary" /> Free delivery above ₹999
+        <Truck size={14} className="text-primary" />
+        <EditableText id="panel.freeDelivery">Free delivery above ₹999</EditableText>
       </div>
 
       {(
       <>
       <label className="mt-6 block text-sm">
-        <span className="mb-1 block font-medium text-foreground">
-          Message on the cake (optional)
+        <span className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
+          <EditableText id="panel.message.label">Message on the cake (optional)</EditableText>
+          <EditableValue id="panel.message.placeholder" fallback="e.g. Happy Birthday Priya!" label="Cake message box hint" />
         </span>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value.slice(0, CAKE_MESSAGE_MAX))}
-          placeholder="e.g. Happy Birthday Priya!"
+          placeholder={messageHint}
           rows={2}
           className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/20"
         />
@@ -315,13 +365,18 @@ export function CakePurchasePanel({
       </label>
 
       <label className="mt-4 block text-sm">
-        <span className="mb-1 block font-medium text-foreground">
-          Special instructions (optional)
+        <span className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
+          <EditableText id="panel.instructions.label">Special instructions (optional)</EditableText>
+          <EditableValue
+            id="panel.instructions.placeholder"
+            fallback="e.g. Please call before delivery, egg-free preferred, leave at the gate…"
+            label="Special instructions box hint"
+          />
         </span>
         <textarea
           value={specialInstructions}
           onChange={(e) => setSpecialInstructions(e.target.value.slice(0, INSTRUCTIONS_MAX))}
-          placeholder="e.g. Please call before delivery, egg-free preferred, leave at the gate…"
+          placeholder={instructionsHint}
           rows={2}
           className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/20"
         />
@@ -332,7 +387,9 @@ export function CakePurchasePanel({
 
       {!enquiryMode && partyEssentials && partyEssentials.length > 0 && (
         <div className="mt-6">
-          <h2 className="text-sm font-bold text-foreground">Make it special</h2>
+          <EditableText id="panel.makeItSpecial" as="h2" className="text-sm font-bold text-foreground">
+            Make it special
+          </EditableText>
           <div className="mt-2 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
             {partyEssentials.map((item) => {
               const qty = partyEssentialQuantity(item);
@@ -342,18 +399,31 @@ export function CakePurchasePanel({
                   className="flex w-24 shrink-0 flex-col rounded-md border border-border bg-card p-1.5"
                 >
                   <Link to="/product/$productSlug" params={{ productSlug: item.slug }} className="mb-1.5 block">
-                    <div className="aspect-square overflow-hidden rounded bg-muted">
-                      <img
-                        src={resizedImageUrl(item.image, 192)}
-                        alt={item.name}
-                        loading="lazy"
-                        className="h-full w-full object-cover"
-                      />
+                    <div className="relative aspect-square overflow-hidden rounded bg-muted">
+                      <EditableImage
+                        fallback={item.image}
+                        buttonPosition="left-0.5 top-0.5"
+                        compact
+                        onSave={(image_url) => saveProduct(item.id, { image_url })}
+                      >
+                        {(src) => (
+                          <img
+                            src={resizedImageUrl(src, 192)}
+                            alt={item.name}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </EditableImage>
                     </div>
                     {/* Always two lines tall, so every price and Add button lines up across the row. */}
-                    <p className="mt-1 line-clamp-2 min-h-[2.5em] text-[11px] font-medium leading-tight text-foreground">
+                    <EditableText
+                      as="p"
+                      className="mt-1 line-clamp-2 min-h-[2.5em] text-[11px] font-medium leading-tight text-foreground"
+                      onSave={(name) => saveProduct(item.id, { name })}
+                    >
                       {item.name}
-                    </p>
+                    </EditableText>
                     <p className="text-[11px] font-semibold text-primary">₹{item.price}</p>
                   </Link>
                   {qty === 0 ? (
@@ -363,7 +433,7 @@ export function CakePurchasePanel({
                       className="mt-auto h-7 w-full px-0 text-[11px]"
                       onClick={() => addPartyEssential(item)}
                     >
-                      Add
+                      <EditableText id="panel.add">Add</EditableText>
                     </Button>
                   ) : (
                     <div className="mt-auto flex items-center justify-between rounded-md border border-input">
@@ -412,7 +482,8 @@ export function CakePurchasePanel({
             rel="noopener noreferrer"
             className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-[#25D366] px-6 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02] sm:flex-none"
           >
-            <MessageCircle size={17} /> Enquire on WhatsApp
+            <MessageCircle size={17} />
+            <EditableText id="panel.enquireButton">Enquire on WhatsApp</EditableText>
           </a>
         ) : (
         <>
@@ -443,7 +514,11 @@ export function CakePurchasePanel({
             onClick={handleAdd}
             disabled={price === undefined || outOfStock}
           >
-            {added ? "Added!" : "Add to Cart"}
+            {added ? (
+              <EditableText id="panel.added">Added!</EditableText>
+            ) : (
+              <EditableText id="panel.addToCart">Add to Cart</EditableText>
+            )}
           </Button>
           <Button
             size="lg"
@@ -452,7 +527,7 @@ export function CakePurchasePanel({
             onClick={handleBuyNow}
             disabled={price === undefined || outOfStock}
           >
-            Buy Now
+            <EditableText id="panel.buyNow">Buy Now</EditableText>
           </Button>
         </div>
         </>
@@ -468,9 +543,9 @@ export function CakePurchasePanel({
         </button>
       </div>
       {outOfStock && (
-        <p className="mt-2 text-xs font-medium text-destructive">
+        <EditableText id="panel.outOfStockNote" as="p" className="mt-2 block text-xs font-medium text-destructive">
           This cake is currently out of stock — check back soon or contact us for options.
-        </p>
+        </EditableText>
       )}
     </div>
   );

@@ -19,7 +19,8 @@ import { CakeTabsRail, type TabbedCake } from "@/components/cake-tabs-rail";
 import { useStoreSettings } from "@/lib/store-settings";
 import { isEnquiryCategory } from "@/lib/enquiry";
 import { characterIcon } from "@/lib/character-icons";
-import { AdminShortcut } from "@/components/editable";
+import { AdminShortcut, EditableText } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 import {
   CategoryFilterBar,
   DEFAULT_FILTERS,
@@ -220,6 +221,7 @@ function CategoryPage() {
   }, [isWeddingCakes, isBirthdayCakes, isKidsCakes, weddingCakes, birthdayCakes, kidsCakes, featuredCakes]);
 
   const enquiryCategory = isEnquiryCategory(category.slug);
+  const { saveCategory } = useEditMode();
   const filterBar =
     totalCount > 1 ? (
       <CategoryFilterBar
@@ -236,18 +238,23 @@ function CategoryPage() {
   const noMatches = (
     <div className="my-12 text-center">
       <CakeSlice className="mx-auto text-muted-foreground" size={32} />
-      <h3 className="mt-3 font-display text-xl">No cakes match those filters</h3>
+      <EditableText id="category.noMatches" as="h3" className="mt-3 font-display text-xl">
+        No cakes match those filters
+      </EditableText>
       <button
         type="button"
         onClick={() => setFilters({ ...filters, flavours: [], priceBand: null })}
         className="mt-2 text-sm font-medium text-primary underline"
       >
-        Clear filters
+        <EditableText id="category.clearFilters">Clear filters</EditableText>
       </button>
     </div>
   );
 
   const count = totalCount;
+  const categoryName = (
+    <EditableText onSave={(name) => saveCategory(category.id, { name })}>{category.name}</EditableText>
+  );
 
   return (
     <main className="min-h-screen bg-background pb-20 md:pb-0">
@@ -255,25 +262,39 @@ function CategoryPage() {
 
       {category.bannerText && (
         <div className="bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground">
-          {category.bannerText}
+          <EditableText onSave={(bannerText) => saveCategory(category.id, { bannerText })}>
+            {category.bannerText}
+          </EditableText>
         </div>
       )}
 
       <div className="mx-auto max-w-7xl px-4 lg:px-6">
         <nav className="py-4 text-xs text-muted-foreground" aria-label="Breadcrumb">
-          <Link to="/" className="hover:text-primary">Home</Link>
+          <Link to="/" className="hover:text-primary">
+            <EditableText id="breadcrumb.home">Home</EditableText>
+          </Link>
           <span className="mx-1.5">/</span>
-          <span className="text-foreground">{category.name}</span>
+          <span className="text-foreground">{categoryName}</span>
         </nav>
 
         {comingSoon ? (
           <div className="my-16 rounded-2xl border border-border bg-primary/[0.05] px-6 py-14 text-center">
             <CakeSlice className="mx-auto text-primary" size={40} />
-            <p className="mt-4 text-xs font-bold uppercase tracking-widest text-primary">Coming soon</p>
-            <h1 className="mt-2 font-display text-3xl sm:text-4xl">{category.name}</h1>
-            <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">{comingSoon.message}</p>
+            <EditableText id="category.comingSoon.kicker" as="p" className="mt-4 block text-xs font-bold uppercase tracking-widest text-primary">
+              Coming soon
+            </EditableText>
+            <h1 className="mt-2 font-display text-3xl sm:text-4xl">{categoryName}</h1>
+            <EditableText
+              id={`category.${category.slug}.comingSoon`}
+              as="p"
+              className="mx-auto mt-3 block max-w-md text-sm text-muted-foreground"
+            >
+              {comingSoon.message}
+            </EditableText>
             <Button className="mt-6" asChild>
-              <Link to="/">Browse our cakes</Link>
+              <Link to="/">
+                <EditableText id="category.comingSoon.button">Browse our cakes</EditableText>
+              </Link>
             </Button>
           </div>
         ) : (
@@ -292,11 +313,16 @@ function CategoryPage() {
         ) : (
           <div className="border-b border-border pb-6">
             <div className="min-w-0">
-              <h1 className="font-display text-3xl sm:text-4xl">{category.name}</h1>
+              <h1 className="font-display text-3xl sm:text-4xl">{categoryName}</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                {count} {isWeddingCakes || isKidsCakes ? "cake designs" : isBirthdayCakes ? "cakes" : "items"} in this category.
-                {(isWeddingCakes || isKidsCakes) && " Pick a design to choose your flavour and size."}
-                {isBirthdayCakes && " Pick a cake to choose your size."}
+                {count}{" "}
+                <EditableText id={`category.${category.slug}.countText`}>
+                  {isWeddingCakes || isKidsCakes
+                    ? "cake designs in this category. Pick a design to choose your flavour and size."
+                    : isBirthdayCakes
+                      ? "cakes in this category. Pick a cake to choose your size."
+                      : "items in this category."}
+                </EditableText>
               </p>
             </div>
           </div>
@@ -320,10 +346,16 @@ function CategoryPage() {
           ) : (
             <div className="my-16 text-center">
               <CakeSlice className="mx-auto text-muted-foreground" size={36} />
-              <h3 className="mt-3 font-display text-2xl">No cakes here yet</h3>
-              <p className="mt-1 text-sm text-muted-foreground">Check back soon, or browse another category.</p>
+              <EditableText id="category.empty.title" as="h3" className="mt-3 font-display text-2xl">
+                No cakes here yet
+              </EditableText>
+              <EditableText id="category.empty.text" as="p" className="mt-1 text-sm text-muted-foreground">
+                Check back soon, or browse another category.
+              </EditableText>
               <Button className="mt-4" asChild>
-                <Link to="/">See all cakes</Link>
+                <Link to="/">
+                  <EditableText id="category.empty.button">See all cakes</EditableText>
+                </Link>
               </Button>
             </div>
           )
@@ -334,6 +366,7 @@ function CategoryPage() {
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {sortedWeddingCakes.map((cake) => (
               <CakeCard
+                productId={cake.productId}
                 key={cake.slug}
                 href={`/wedding-cake/${cake.slug}`}
                 image={cake.image}
@@ -365,6 +398,7 @@ function CategoryPage() {
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {sortedBirthdayCakes.map((cake) => (
                 <CakeCard
+                  productId={cake.id}
                   key={cake.id}
                   href={`/birthday-cake/${cake.slug}`}
                   image={cake.image}
@@ -394,6 +428,7 @@ function CategoryPage() {
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {sortedKidsCakes.map((cake) => (
               <CakeCard
+                productId={cake.id}
                 key={cake.id}
                 href={`/kids-cake/${cake.slug}`}
                 image={cake.image}
@@ -419,6 +454,7 @@ function CategoryPage() {
               const basePath = primarySlug ? basePathForCategorySlug(primarySlug) : "/product";
               return (
                 <CakeCard
+                  productId={cake.id}
                   key={cake.id}
                   href={`${basePath}/${cake.slug}`}
                   image={cake.image}
@@ -438,10 +474,16 @@ function CategoryPage() {
         ) : (
           <div className="my-16 text-center">
             <CakeSlice className="mx-auto text-muted-foreground" size={36} />
-            <h3 className="mt-3 font-display text-2xl">No cakes here yet</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Check back soon, or browse another category.</p>
+            <EditableText id="category.empty.title" as="h3" className="mt-3 font-display text-2xl">
+                No cakes here yet
+              </EditableText>
+            <EditableText id="category.empty.text" as="p" className="mt-1 text-sm text-muted-foreground">
+                Check back soon, or browse another category.
+              </EditableText>
             <Button className="mt-4" asChild>
-              <Link to="/">See all cakes</Link>
+              <Link to="/">
+                  <EditableText id="category.empty.button">See all cakes</EditableText>
+                </Link>
             </Button>
           </div>
         )}

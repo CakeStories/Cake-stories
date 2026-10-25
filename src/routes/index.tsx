@@ -17,6 +17,7 @@ import bannerDesigner from "@/assets/cake-stories-designer.jpg";
 import bannerCustomize from "@/assets/cake-stories-customize.jpg";
 import { resizedImageUrl, responsiveImage } from "@/lib/supabase";
 import { AdminShortcut, EditableImage, EditableText } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -76,6 +77,34 @@ function heroSrcSet(image: string): string | undefined {
   const at = (w: number) => resizedImageUrl(image, w, 75);
   if (at(640) === image) return undefined; // not a Supabase photo (bundled artwork)
   return [640, 960, 1280, 1920].map((w) => `${at(w)} ${w}w`).join(", ");
+}
+
+/** One hero slide's photo; in the website editor it can be swapped in place. */
+function HeroImage({ banner, index }: { banner: { id?: string; image: string }; index: number }) {
+  const { saveBannerImage } = useEditMode();
+  const bannerId = banner.id;
+  return (
+    <EditableImage
+      // Admin banners save to the banner itself; the built-in artwork is replaced per slide.
+      {...(bannerId ? { onSave: (url: string) => saveBannerImage(bannerId, url) } : { id: `home.hero.${index}` })}
+      fallback={banner.image}
+      buttonPosition="left-3 top-3"
+    >
+      {(image) => (
+        <img
+          src={resizedImageUrl(image, 1280, 75)}
+          srcSet={heroSrcSet(image)}
+          sizes="(min-width: 1280px) 1280px, 100vw"
+          width={1600}
+          height={533}
+          alt=""
+          fetchPriority={index === 0 ? "high" : undefined}
+          loading={index === 0 ? "eager" : "lazy"}
+          className="h-full w-full object-cover object-center"
+        />
+      )}
+    </EditableImage>
+  );
 }
 
 function FlavourThumbnail({ label, slug }: { label: string; slug: string }) {
@@ -186,6 +215,7 @@ const fallbackBanners: {
 
 function CakeStore() {
   const { dbBanners } = Route.useLoaderData();
+  const { saveProduct } = useEditMode();
   const flavourScrollRef = useRef<HTMLDivElement>(null);
   const celebrationScrollRef = useRef<HTMLDivElement>(null);
   const collectionScrollRef = useRef<HTMLDivElement>(null);
@@ -264,17 +294,7 @@ function CakeStore() {
                 aria-label={banner.label}
                 className={`absolute inset-0 transition-opacity duration-700 ${index === bannerIndex ? "opacity-100" : "pointer-events-none opacity-0"}`}
               >
-                <img
-                  src={resizedImageUrl(banner.image, 1280, 75)}
-                  srcSet={heroSrcSet(banner.image)}
-                  sizes="(min-width: 1280px) 1280px, 100vw"
-                  width={1600}
-                  height={533}
-                  alt=""
-                  fetchPriority={index === 0 ? "high" : undefined}
-                  loading={index === 0 ? "eager" : "lazy"}
-                  className="h-full w-full object-cover object-center"
-                />
+                <HeroImage banner={banner} index={index} />
               </a>
             ) : (
               <Link
@@ -285,17 +305,7 @@ function CakeStore() {
                 aria-label={banner.label}
                 className={`absolute inset-0 transition-opacity duration-700 ${index === bannerIndex ? "opacity-100" : "pointer-events-none opacity-0"}`}
               >
-                <img
-                  src={resizedImageUrl(banner.image, 1280, 75)}
-                  srcSet={heroSrcSet(banner.image)}
-                  sizes="(min-width: 1280px) 1280px, 100vw"
-                  width={1600}
-                  height={533}
-                  alt=""
-                  fetchPriority={index === 0 ? "high" : undefined}
-                  loading={index === 0 ? "eager" : "lazy"}
-                  className="h-full w-full object-cover object-center"
-                />
+                <HeroImage banner={banner} index={index} />
               </Link>
             ),
           )}
@@ -354,12 +364,28 @@ function CakeStore() {
                   params={{ flavourSlug: flavour.slug }}
                   className="w-28 shrink-0 snap-start text-center sm:w-32"
                 >
-                  <span className="block aspect-square overflow-hidden rounded-md border border-border bg-muted">
-                    <FlavourThumbnail label={flavour.label} slug={flavour.slug} />
+                  <span className="relative block aspect-square overflow-hidden rounded-md border border-border bg-muted">
+                    <EditableImage id={`flavour.${flavour.slug}.image`} fallback="" buttonPosition="left-1 top-1" compact>
+                      {(uploaded) =>
+                        uploaded ? (
+                          <img
+                            src={resizedImageUrl(uploaded, 256)}
+                            alt={flavour.label}
+                            loading="lazy"
+                            className="h-full w-full object-cover transition duration-300 hover:scale-105"
+                          />
+                        ) : (
+                          <FlavourThumbnail label={flavour.label} slug={flavour.slug} />
+                        )
+                      }
+                    </EditableImage>
                   </span>
-                  <span className="mt-2 block truncate text-xs font-semibold leading-4 sm:text-sm">
+                  <EditableText
+                    id={`flavour.${flavour.slug}.label`}
+                    className="mt-2 block truncate text-xs font-semibold leading-4 sm:text-sm"
+                  >
                     {flavour.label}
-                  </span>
+                  </EditableText>
                 </Link>
               ))}
             </div>
@@ -545,16 +571,33 @@ function CakeStore() {
                     params={{ productSlug: treat.slug }}
                     className="group relative w-[42vw] max-w-[220px] shrink-0 snap-start sm:w-[200px] lg:w-[210px]"
                   >
-                    <span className="block aspect-[3/5] overflow-hidden rounded-md bg-muted shadow-sm">
-                      <img
-                        {...responsiveImage(treat.image, 240, "(min-width: 640px) 210px, 42vw")}
-                        alt={treat.name}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    <span className="relative block aspect-[3/5] overflow-hidden rounded-md bg-muted shadow-sm">
+                      <EditableImage
+                        fallback={treat.image}
+                        onSave={(image_url) => saveProduct(treat.id, { image_url })}
+                      >
+                        {(image) => (
+                          <img
+                            {...responsiveImage(image, 240, "(min-width: 640px) 210px, 42vw")}
+                            alt={treat.name}
+                            loading="lazy"
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          />
+                        )}
+                      </EditableImage>
+                      <AdminShortcut
+                        label="Price"
+                        search={{ tab: "products", q: treat.name }}
+                        className="absolute right-2 top-2"
                       />
                     </span>
                     <span className="absolute inset-x-3 -bottom-3 rounded-lg bg-gradient-to-r from-[#f0566f] to-[#9b5cf6] px-2 py-1.5 text-center text-white shadow-md">
-                      <span className="block truncate text-xs font-semibold sm:text-sm">{treat.name}</span>
+                      <EditableText
+                        className="block truncate text-xs font-semibold sm:text-sm"
+                        onSave={(name) => saveProduct(treat.id, { name })}
+                      >
+                        {treat.name}
+                      </EditableText>
                       <span className="block text-[11px] font-bold opacity-95">₹{treat.minPrice}</span>
                     </span>
                   </Link>

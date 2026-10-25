@@ -1,6 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { EditableImage, EditableText } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 import { CakeCard } from "@/components/cake-card";
 import { CakePurchasePanel } from "@/components/cake-purchase-panel";
 import { getKidsCakes } from "@/lib/kids-cakes";
@@ -37,6 +39,7 @@ export const Route = createFileRoute("/kids-cake/$slug")({
 
 function KidsCakePage() {
   const { cake, related, partyEssentials } = Route.useLoaderData();
+  const { saveProduct } = useEditMode();
 
   return (
     <main className="min-h-screen bg-background pb-20 md:pb-0">
@@ -45,7 +48,7 @@ function KidsCakePage() {
       <div className="mx-auto max-w-7xl px-4 lg:px-6">
         <nav className="py-4 text-xs text-muted-foreground" aria-label="Breadcrumb">
           <Link to="/" className="hover:text-primary">
-            Home
+            <EditableText id="breadcrumb.home">Home</EditableText>
           </Link>
           <span className="mx-1.5">/</span>
           <Link
@@ -53,7 +56,7 @@ function KidsCakePage() {
             params={{ categorySlug: "kids-cakes" }}
             className="hover:text-primary"
           >
-            Kids Cakes
+            <EditableText id="breadcrumb.kids-cakes">Kids Cakes</EditableText>
           </Link>
           <span className="mx-1.5">/</span>
           <span className="text-foreground">{cake.name}</span>
@@ -61,18 +64,27 @@ function KidsCakePage() {
 
         <div className="grid grid-cols-1 items-stretch gap-8 border-b border-border pb-10 sm:grid-cols-2">
           {/* A plain in-flow square image: iOS Safari collapsed the old aspect-ratio box (holding only an absolutely positioned image) to 0x0. */}
-          <div className="overflow-hidden rounded-lg bg-muted sm:sticky sm:top-24 sm:self-start">
-            <img
-              {...responsiveImage(cake.image, 640, "(min-width: 640px) 50vw, 100vw")}
-              fetchPriority="high"
-              alt={cake.name}
-              onError={onProductImageError}
-              className="block aspect-square w-full object-cover sm:object-contain"
-            />
+          <div className="relative overflow-hidden rounded-lg bg-muted sm:sticky sm:top-24 sm:self-start">
+            <EditableImage
+              fallback={cake.image}
+              buttonPosition="left-3 top-3"
+              onSave={(image_url) => saveProduct(cake.id, { image_url })}
+            >
+              {(src) => (
+                <img
+                  {...responsiveImage(src, 640, "(min-width: 640px) 50vw, 100vw")}
+                  fetchPriority="high"
+                  alt={cake.name}
+                  onError={onProductImageError}
+                  className="block aspect-square w-full object-cover sm:object-contain"
+                />
+              )}
+            </EditableImage>
           </div>
 
           <CakePurchasePanel
             key={cake.slug}
+            productId={cake.id}
             slug={cake.slug}
             basePath="/kids-cake"
             title={cake.name}
@@ -93,10 +105,13 @@ function KidsCakePage() {
 
         {related.length > 0 && (
           <section className="py-10">
-            <h2 className="font-display text-2xl">More Kids Cakes</h2>
+            <EditableText id="related.kids-cakes" as="h2" className="font-display text-2xl">
+              More Kids Cakes
+            </EditableText>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {related.map((item) => (
                 <CakeCard
+                  productId={item.id}
                   key={item.id}
                   href={`/kids-cake/${item.slug}`}
                   image={item.image}

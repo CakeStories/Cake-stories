@@ -30,6 +30,9 @@ import {
 } from "@/lib/recent-searches";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
+import { EditableImage, EditableText, EditableValue } from "@/components/editable";
+import { useEditMode, useSiteText } from "@/lib/edit-mode";
+import { resizedImageUrl } from "@/lib/supabase";
 import iconBirthdayCakes from "@/assets/category-icon-birthday-cakes.png";
 import iconWeddingCakes from "@/assets/category-icon-wedding-cakes.png";
 import iconKidsCakes from "@/assets/category-icon-kids-cakes.png";
@@ -78,15 +81,15 @@ function SearchDropdown({
       {recent.length > 0 && (
         <div className="mb-4">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <EditableText id="header.search.recent" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Recent searches
-            </span>
+            </EditableText>
             <button
               type="button"
               className="text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
               onClick={() => setRecent(clearRecentSearches())}
             >
-              Clear all
+              <EditableText id="header.search.clear">Clear all</EditableText>
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -118,9 +121,12 @@ function SearchDropdown({
       )}
 
       <div className="mb-4">
-        <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <EditableText
+          id="header.search.categories"
+          className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           Shop by category
-        </span>
+        </EditableText>
         <div className="flex flex-wrap gap-2">
           {categories.map((c) => (
             <Link
@@ -137,9 +143,12 @@ function SearchDropdown({
       </div>
 
       <div>
-        <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <EditableText
+          id="header.search.flavours"
+          className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           Popular flavours
-        </span>
+        </EditableText>
         <div className="flex flex-wrap gap-2">
           {flavours.map((f) => (
             <Link
@@ -149,7 +158,7 @@ function SearchDropdown({
               onClick={onNavigate}
               className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium transition hover:bg-accent"
             >
-              {f.label}
+              <EditableText id={`flavour.${f.slug}.label`}>{f.label}</EditableText>
             </Link>
           ))}
         </div>
@@ -167,8 +176,24 @@ function SearchDropdown({
 function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) {
   const { location, setBranch, setByPincode } = useDeliveryLocation();
   const [open, setOpen] = useState(false);
+  const { content } = useEditMode();
   // "Pickup from Anducode" when a shop was chosen, "Delivering to …" for a pincode.
-  const prefix = isPickupLocation(location) ? "Pickup from" : "Delivering to";
+  const prefix = isPickupLocation(location) ? (
+    <EditableText id="header.location.pickupFrom">Pickup from</EditableText>
+  ) : (
+    <EditableText id="header.location.deliveringTo">Delivering to</EditableText>
+  );
+  const branchLabel = (id: string, fallback: string) => content[`branch.${id}.label`] ?? fallback;
+  // The area name: a shop's (editable) name, "Choose your area" (editable), or the pincode's area.
+  const locationLabel =
+    location.id === "none" ? (
+      <EditableText id="header.location.none">{location.label}</EditableText>
+    ) : isPickupLocation(location) ? (
+      branchLabel(location.id, location.label)
+    ) : (
+      location.label
+    );
+  const pincodeHint = useSiteText("header.location.placeholder", "Enter your pincode");
   const [pincode, setPincode] = useState("");
   const [status, setStatus] = useState<{
     loading: boolean;
@@ -207,7 +232,7 @@ function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) 
             <span>
               <span className="block text-muted-foreground">{prefix}</span>
               <strong className="flex items-center gap-1">
-                {location.label} <ChevronDown size={13} />
+                {locationLabel} <ChevronDown size={13} />
               </strong>
             </span>
           </button>
@@ -215,39 +240,42 @@ function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) 
           <button type="button" className="flex w-full items-center gap-1.5 text-left text-xs">
             <MapPin size={15} className="shrink-0 text-primary" />
             <span className="text-muted-foreground">{prefix}</span>
-            <strong className="min-w-0 truncate">{location.label}</strong>
+            <strong className="min-w-0 truncate">{locationLabel}</strong>
             <ChevronDown size={13} className="shrink-0" />
           </button>
         )}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-3">
-        <p className="text-sm font-semibold">Check delivery to your area</p>
-        <form onSubmit={submit} className="mt-2 flex gap-1.5">
+        <EditableText id="header.location.title" as="p" className="text-sm font-semibold">
+          Check delivery to your area
+        </EditableText>
+        <form onSubmit={submit} className="mt-2 flex items-center gap-1.5">
+          <EditableValue id="header.location.placeholder" fallback="Enter your pincode" label="Pincode box hint" />
           <input
             value={pincode}
             onChange={(e) => {
               setPincode(e.target.value.replace(/\D/g, "").slice(0, 6));
               if (status.error) setStatus({ loading: false, error: null });
             }}
-            placeholder="Enter your pincode"
+            placeholder={pincodeHint}
             aria-label="Pincode"
             inputMode="numeric"
             autoComplete="postal-code"
             className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-base outline-none focus:ring-2 focus:ring-ring sm:text-sm"
           />
           <Button type="submit" disabled={status.loading || pincode.length !== 6}>
-            {status.loading ? "…" : "Check"}
+            {status.loading ? "…" : <EditableText id="header.location.check">Check</EditableText>}
           </Button>
         </form>
         {status.notDeliverable ? (
           <div role="alert" className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-xs">
             <p className="flex items-center gap-1.5 font-semibold text-destructive">
-              <X size={14} className="shrink-0" /> Not deliverable to this location
+              <X size={14} className="shrink-0" />
+              <EditableText id="header.location.notDeliverable">Not deliverable to this location</EditableText>
             </p>
-            <p className="mt-1 text-foreground/80">
-              We deliver cakes within 15 km of our shops. You can still order for pickup from one of
-              our shops below, and Party Essentials ship anywhere in India.
-            </p>
+            <EditableText id="header.location.notDeliverableHelp" as="p" className="mt-1 text-foreground/80">
+              We deliver cakes within 15 km of our shops. You can still order for pickup from one of our shops below, and Party Essentials ship anywhere in India.
+            </EditableText>
           </div>
         ) : (
           status.error && (
@@ -256,9 +284,13 @@ function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) 
             </p>
           )
         )}
-        <p className="mt-3 border-t border-border pt-3 text-xs font-semibold text-muted-foreground">
+        <EditableText
+          id="header.location.pickupTitle"
+          as="p"
+          className="mt-3 block border-t border-border pt-3 text-xs font-semibold text-muted-foreground"
+        >
           Or pick up from one of our shops
-        </p>
+        </EditableText>
         <ul className="mt-1.5 space-y-1">
           {BRANCH_LOCATIONS.map((shop) => (
             <li key={shop.id}>
@@ -272,8 +304,12 @@ function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) 
                   location.id === shop.id ? "bg-primary/10" : ""
                 }`}
               >
-                <span className="block text-sm font-medium">{shop.label}</span>
-                <span className="block text-xs text-muted-foreground">{shop.address}</span>
+                <EditableText id={`branch.${shop.id}.label`} className="block text-sm font-medium">
+                  {shop.label}
+                </EditableText>
+                <EditableText id={`branch.${shop.id}.address`} className="block text-xs text-muted-foreground">
+                  {shop.address}
+                </EditableText>
               </button>
             </li>
           ))}
@@ -285,14 +321,18 @@ function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) 
 
 export function Logo() {
   return (
-    <Link to="/" className="flex items-center" aria-label="Cake Stories home">
-      <img
-        src="/cake-stories-logo-sm.webp"
-        alt="Cake Stories"
-        width={300}
-        height={146}
-        className="h-9 w-auto sm:h-11"
-      />
+    <Link to="/" className="relative flex items-center" aria-label="Cake Stories home">
+      <EditableImage id="site.logo" fallback="/cake-stories-logo-sm.webp" buttonPosition="-right-6 top-0" compact>
+        {(src) => (
+          <img
+            src={resizedImageUrl(src, 300)}
+            alt="Cake Stories"
+            width={300}
+            height={146}
+            className="h-9 w-auto sm:h-11"
+          />
+        )}
+      </EditableImage>
     </Link>
   );
 }
@@ -322,6 +362,9 @@ export function SiteHeader({
   const { count: wishlistCount } = useWishlist();
   const { user } = useAuth();
   const settings = useStoreSettings();
+  const { saveStoreSettings, saveCategory } = useEditMode();
+  const searchHint = useSiteText("header.search.placeholder", "Search for cakes, flavours and occasions");
+  const mobileSearchHint = useSiteText("header.search.placeholderMobile", "Search cakes");
   // Categories come from the database now (so the shop owner can rename or
   // add one from /manage), but we render the last-known static list
   // immediately so the nav never flashes empty while this loads.
@@ -355,11 +398,13 @@ export function SiteHeader({
     <>
       {settings.announcementActive && (
         <div className="bg-primary px-4 py-2 text-center text-xs font-semibold text-primary-foreground sm:text-sm">
-          {settings.announcementText}
+          <EditableText onSave={(announcementText) => saveStoreSettings({ announcementText })}>
+            {settings.announcementText}
+          </EditableText>
           {settings.announcementCouponCode && (
             <>
               {" "}
-              · Use code{" "}
+              · <EditableText id="header.announcement.useCode">Use code</EditableText>{" "}
               <span className="rounded bg-primary-foreground/20 px-1.5 py-0.5 font-bold tracking-wide">
                 {settings.announcementCouponCode}
               </span>
@@ -376,11 +421,17 @@ export function SiteHeader({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 overflow-y-auto">
-              <SheetTitle className="font-display text-xl">Menu</SheetTitle>
+              <SheetTitle className="font-display text-xl">
+                <EditableText id="header.menu.title">Menu</EditableText>
+              </SheetTitle>
               <nav className="mt-5 flex flex-col gap-1 text-sm" aria-label="Mobile menu">
-                <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <EditableText
+                  id="header.menu.shop"
+                  as="p"
+                  className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                >
                   Shop
-                </p>
+                </EditableText>
                 {categories.map(({ slug, name }) => (
                   <SheetClose asChild key={slug}>
                     <Link
@@ -392,25 +443,35 @@ export function SiteHeader({
                     </Link>
                   </SheetClose>
                 ))}
-                <p className="mt-4 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <EditableText
+                  id="header.menu.you"
+                  as="p"
+                  className="mt-4 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                >
                   You
-                </p>
+                </EditableText>
                 <SheetClose asChild>
                   <Link
                     to={user ? "/account" : "/login"}
                     className="rounded-md px-2 py-2 font-medium hover:bg-muted"
                   >
-                    {user ? "My account & orders" : "Sign in"}
+                    {user ? (
+                      <EditableText id="header.menu.account">My account & orders</EditableText>
+                    ) : (
+                      <EditableText id="header.menu.signIn">Sign in</EditableText>
+                    )}
                   </Link>
                 </SheetClose>
                 <SheetClose asChild>
                   <Link to="/wishlist" className="rounded-md px-2 py-2 font-medium hover:bg-muted">
-                    Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ""}
+                    <EditableText id="header.menu.wishlist">Wishlist</EditableText>
+                    {wishlistCount > 0 ? ` (${wishlistCount})` : ""}
                   </Link>
                 </SheetClose>
                 <SheetClose asChild>
                   <Link to="/cart" className="rounded-md px-2 py-2 font-medium hover:bg-muted">
-                    Cart{itemCount > 0 ? ` (${itemCount})` : ""}
+                    <EditableText id="header.menu.cart">Cart</EditableText>
+                    {itemCount > 0 ? ` (${itemCount})` : ""}
                   </Link>
                 </SheetClose>
               </nav>
@@ -433,7 +494,13 @@ export function SiteHeader({
                 onFocus={() => setDesktopSearchOpen(true)}
                 onBlur={() => setDesktopSearchOpen(false)}
                 className="h-11 w-full rounded-md border border-input bg-muted/50 pl-11 pr-4 text-sm outline-none transition focus:border-primary focus:bg-background focus:ring-2 focus:ring-ring/20"
-                placeholder="Search for cakes, flavours and occasions"
+                placeholder={searchHint}
+              />
+              <EditableValue
+                id="header.search.placeholder"
+                fallback="Search for cakes, flavours and occasions"
+                label="Search box hint"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
               />
             </label>
             {desktopSearchOpen && !query.trim() && (
@@ -505,7 +572,13 @@ export function SiteHeader({
               onFocus={() => setMobileSearchOpen(true)}
               onBlur={() => setMobileSearchOpen(false)}
               className="h-10 w-full rounded-md bg-muted pl-10 pr-3 text-sm outline-none"
-              placeholder="Search cakes"
+              placeholder={mobileSearchHint}
+            />
+            <EditableValue
+              id="header.search.placeholderMobile"
+              fallback="Search cakes"
+              label="Search box hint (phones)"
+              className="absolute right-2 top-1/2 -translate-y-1/2"
             />
           </label>
           {mobileSearchOpen && !query.trim() && (
@@ -527,8 +600,9 @@ export function SiteHeader({
           className="scrollbar-none flex snap-x gap-3 overflow-x-auto border-b border-border py-4"
           aria-label="Cake categories"
         >
-          {categories.map(({ slug, name }) => {
-            const icon = CATEGORY_ICONS[slug];
+          {categories.map((category) => {
+            const { slug, name } = category;
+            const id = "id" in category ? (category.id as string) : null;
             return (
               <Link
                 key={slug}
@@ -540,16 +614,27 @@ export function SiteHeader({
                     : "bg-muted text-foreground hover:bg-accent"
                 }`}
               >
-                {icon ? (
-                  <img
-                    src={icon}
-                    alt=""
-                    className={`h-6 w-6 object-contain ${activeCategory === slug ? "brightness-0 invert" : ""}`}
-                  />
-                ) : (
-                  <CakeSlice size={23} />
-                )}
-                <span className="line-clamp-2 leading-tight">{name}</span>
+                <span className="relative">
+                  <EditableImage id={`nav.icon.${slug}`} fallback={CATEGORY_ICONS[slug] ?? ""} buttonPosition="-right-6 -top-2" compact>
+                    {(icon) =>
+                      icon ? (
+                        <img
+                          src={resizedImageUrl(icon, 64)}
+                          alt=""
+                          className={`h-6 w-6 object-contain ${activeCategory === slug ? "brightness-0 invert" : ""}`}
+                        />
+                      ) : (
+                        <CakeSlice size={23} />
+                      )
+                    }
+                  </EditableImage>
+                </span>
+                <EditableText
+                  className="line-clamp-2 leading-tight"
+                  {...(id && { onSave: (value: string) => saveCategory(id, { name: value }) })}
+                >
+                  {name}
+                </EditableText>
               </Link>
             );
           })}

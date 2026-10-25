@@ -1,7 +1,17 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 import { fetchSiteContent, type SiteContent } from "@/lib/site-content";
-import { adminSaveSiteContent, adminUploadSiteImage } from "@/lib/admin.server";
+import { setWhatsAppNumber } from "@/lib/whatsapp";
+import { clearReadCache } from "@/lib/supabase";
+import {
+  adminSaveSiteContent,
+  adminUpdateBanner,
+  adminUpdateCategory,
+  adminUpdateProduct,
+  adminUpdateStoreSettings,
+  adminUploadSiteImage,
+} from "@/lib/admin.server";
 
 /** Same key the /manage page keeps its sign-in token under (sessionStorage, this tab only). */
 const ADMIN_TOKEN_KEY = "cake-stories:admin-token";
@@ -24,7 +34,29 @@ type EditModeValue = {
   adminPath: string | null;
   save: (key: string, value: string | null) => Promise<void>;
   uploadImage: (file: File) => Promise<string>;
+  /** Writes a cake's name / description / photo / badge straight to the catalogue. */
+  saveProduct: (productId: string, patch: ProductPatch) => Promise<void>;
+  /** Renames a category (or changes its banner line) in the catalogue. */
+  saveCategory: (categoryId: string, patch: { name?: string; bannerText?: string | null }) => Promise<void>;
+  /** Swaps a banner's photo (homepage or category page). */
+  saveBannerImage: (bannerId: string, imageUrl: string) => Promise<void>;
+  /** The announcement strip and delivery-time wording from Store & offers. */
+  saveStoreSettings: (patch: StorePatch) => Promise<void>;
   exit: () => void;
+};
+
+type StorePatch = {
+  announcementText?: string;
+  birthdayDeliveryEstimate?: string;
+  defaultDeliveryEstimate?: string;
+};
+
+type ProductPatch = {
+  name?: string;
+  description?: string | null;
+  badge?: string | null;
+  delivery_estimate?: string | null;
+  image_url?: string;
 };
 
 const EditModeContext = createContext<EditModeValue | null>(null);
@@ -65,6 +97,8 @@ export function EditModeProvider({ initialContent, children }: { initialContent:
   });
 
   const content = useMemo(() => ({ ...fetched, ...local }), [fetched, local]);
+  // Every "Enquire on WhatsApp" link reads this; set during render so server and browser agree.
+  setWhatsAppNumber(content["contact.whatsapp"]);
 
   const save = useCallback(
     async (key: string, value: string | null) => {
@@ -87,6 +121,51 @@ export function EditModeProvider({ initialContent, children }: { initialContent:
     [session],
   );
 
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  /** After a catalogue change, re-read everything so every page shows it. */
+  const refreshCatalogue = useCallback(async () => {
+    clearReadCache();
+    await queryClient.invalidateQueries();
+    await router.invalidate();
+  }, [queryClient, router]);
+
+  const saveProduct = useCallback(
+    async (productId: string, patch: ProductPatch) => {
+      if (!session) throw new Error("Sign in on the admin page first.");
+      await adminUpdateProduct({ data: { token: session.token, productId, ...patch } });
+      await refreshCatalogue();
+    },
+    [session, refreshCatalogue],
+  );
+
+  const saveCategory = useCallback(
+    async (categoryId: string, patch: { name?: string; bannerText?: string | null }) => {
+      if (!session) throw new Error("Sign in on the admin page first.");
+      await adminUpdateCategory({ data: { token: session.token, categoryId, ...patch } });
+      await refreshCatalogue();
+    },
+    [session, refreshCatalogue],
+  );
+
+  const saveBannerImage = useCallback(
+    async (bannerId: string, imageUrl: string) => {
+      if (!session) throw new Error("Sign in on the admin page first.");
+      await adminUpdateBanner({ data: { token: session.token, bannerId, imageUrl } });
+      await refreshCatalogue();
+    },
+    [session, refreshCatalogue],
+  );
+
+  const saveStoreSettings = useCallback(
+    async (patch: StorePatch) => {
+      if (!session) throw new Error("Sign in on the admin page first.");
+      await adminUpdateStoreSettings({ data: { token: session.token, ...patch } });
+      await refreshCatalogue();
+    },
+    [session, refreshCatalogue],
+  );
+
   const exit = useCallback(() => {
     try {
       window.sessionStorage.removeItem(EDIT_MODE_KEY);
@@ -97,17 +176,44 @@ export function EditModeProvider({ initialContent, children }: { initialContent:
   }, []);
 
   const value = useMemo<EditModeValue>(
-    () => ({ content, editing: session != null, adminPath: session?.adminPath ?? null, save, uploadImage, exit }),
-    [content, session, save, uploadImage, exit],
+    () => ({
+      content,
+      editing: session != null,
+      adminPath: session?.adminPath ?? null,
+      save,
+      uploadImage,
+      saveProduct,
+      saveCategory,
+      saveStoreSettings,
+      saveBannerImage,
+      exit,
+    }),
+    [content, session, save, uploadImage, saveProduct, saveCategory, saveStoreSettings, saveBannerImage, exit],
   );
 
   return <EditModeContext.Provider value={value}>{children}</EditModeContext.Provider>;
 }
 
+const notEditing = async () => {
+  throw new Error("The website editor isn't available here.");
+};
+
+/** Outside the provider (e.g. the root error page) everything just shows its built-in wording. */
+const NO_EDITOR: EditModeValue = {
+  content: {},
+  editing: false,
+  adminPath: null,
+  save: notEditing,
+  uploadImage: notEditing,
+  saveProduct: notEditing,
+  saveCategory: notEditing,
+  saveStoreSettings: notEditing,
+  saveBannerImage: notEditing,
+  exit: () => {},
+};
+
 export function useEditMode(): EditModeValue {
-  const value = useContext(EditModeContext);
-  if (!value) throw new Error("useEditMode must be used inside EditModeProvider");
-  return value;
+  return useContext(EditModeContext) ?? NO_EDITOR;
 }
 
 /** The edited value for this spot, or the built-in default. */

@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/button";
 import { useAuth } from "@/lib/auth";
 import { getMyOrders, type OrderRecord } from "@/lib/orders";
+import { EditableText } from "@/components/editable";
 
 export const Route = createFileRoute("/account")({
   head: () => ({ meta: [{ title: "My Account | Cake Stories" }, { name: "robots", content: "noindex" }] }),
@@ -76,7 +77,7 @@ function AccountPage() {
       <div className="mx-auto max-w-3xl px-4 py-10 lg:px-6">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
           <div>
-            <h1 className="font-display text-3xl">My account</h1>
+            <EditableText id="account.title" as="h1" className="block font-display text-3xl">My account</EditableText>
             <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
           </div>
           <Button
@@ -86,32 +87,32 @@ function AccountPage() {
               void navigate({ to: "/" });
             }}
           >
-            <LogOut size={15} /> Sign out
+            <LogOut size={15} /> <EditableText id="account.signOut">Sign out</EditableText>
           </Button>
         </header>
 
-        <h2 className="mt-8 font-display text-xl">Your orders</h2>
+        <EditableText id="account.orders" as="h2" className="mt-8 block font-display text-xl">Your orders</EditableText>
 
         {error ? (
           <div className="mt-6 rounded-md border border-dashed border-border p-8 text-center">
             <PackageOpen className="mx-auto text-muted-foreground" size={28} />
-            <p className="mt-2 text-sm font-semibold">No previous orders to show</p>
+            <EditableText id="account.error.title" as="p" className="mt-2 block text-sm font-semibold">No previous orders to show</EditableText>
             <p className="mt-1 text-xs text-muted-foreground">{error}</p>
             <Button className="mt-4" variant="secondary" onClick={() => setAttempt((n) => n + 1)}>
-              Try again
+              <EditableText id="account.tryAgain">Try again</EditableText>
             </Button>
           </div>
         ) : !orders ? (
           <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 size={15} className="animate-spin" /> Loading your orders…
+            <Loader2 size={15} className="animate-spin" /> <EditableText id="account.loading">Loading your orders…</EditableText>
           </p>
         ) : orders && orders.length === 0 ? (
           <div className="mt-6 rounded-md border border-dashed border-border p-8 text-center">
             <PackageOpen className="mx-auto text-muted-foreground" size={28} />
-            <p className="mt-2 text-sm font-semibold">No previous orders</p>
-            <p className="mt-1 text-xs text-muted-foreground">Your order history will appear here.</p>
+            <EditableText id="account.none.title" as="p" className="mt-2 block text-sm font-semibold">No previous orders</EditableText>
+            <EditableText id="account.none.text" as="p" className="mt-1 block text-xs text-muted-foreground">Your order history will appear here.</EditableText>
             <Button className="mt-4" asChild>
-              <Link to="/">Browse cakes</Link>
+              <Link to="/"><EditableText id="common.browseCakes">Browse cakes</EditableText></Link>
             </Button>
           </div>
         ) : (
@@ -140,7 +141,7 @@ function AccountPage() {
                       )}
                       {item.customization?.instructions && (
                         <span className="block text-xs text-muted-foreground">
-                          Note: {item.customization.instructions}
+                          <EditableText id="cart.note">Note</EditableText>: {item.customization.instructions}
                         </span>
                       )}
                     </li>
@@ -148,7 +149,7 @@ function AccountPage() {
                 </ul>
                 <div className="mt-3 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
                   <p className="capitalize">
-                    {order.fulfillment_type === "pickup" ? "Store pickup" : "Delivery"}
+                    {order.fulfillment_type === "pickup" ? <EditableText id="account.pickup">Store pickup</EditableText> : <EditableText id="cart.delivery">Delivery</EditableText>}
                     {order.pickup_branch && ` · ${order.pickup_branch}`}
                   </p>
                   {(order.delivery_date || order.delivery_time) && (
@@ -164,18 +165,18 @@ function AccountPage() {
                   )}
                   {order.coupon_code && (
                     <p>
-                      Code <span className="font-semibold">{order.coupon_code}</span> applied — ₹
-                      {order.discount_amount} off
+                      <EditableText id="account.code">Code</EditableText> <span className="font-semibold">{order.coupon_code}</span>{" "}
+                      <EditableText id="account.applied">applied</EditableText> — ₹{order.discount_amount} <EditableText id="price.off">off</EditableText>
                     </p>
                   )}
                 </div>
                 {Number(order.gst_amount) > 0 && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Includes GST of ₹{Number(order.gst_amount).toFixed(2)}
+                    <EditableText id="account.includesGst">Includes GST of</EditableText> ₹{Number(order.gst_amount).toFixed(2)}
                   </p>
                 )}
                 <div className="mt-3 flex justify-between border-t border-border pt-3 text-sm font-semibold">
-                  <span>Total</span>
+                  <EditableText id="account.total">Total</EditableText>
                   <span>₹{order.total}</span>
                 </div>
               </li>

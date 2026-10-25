@@ -9,6 +9,8 @@ import { CakeCard } from "@/components/cake-card";
 import { searchProducts } from "@/lib/search";
 import { addRecentSearch } from "@/lib/recent-searches";
 import { isEnquiryCategory } from "@/lib/enquiry";
+import { EditableText } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 
 export const Route = createFileRoute("/search")({
   validateSearch: (search: Record<string, unknown>): { q?: string } =>
@@ -19,7 +21,24 @@ export const Route = createFileRoute("/search")({
   component: SearchPage,
 });
 
+/** While editing: the sort menu's names, which can't be typed over inside the dropdown. */
+function SearchSortNames() {
+  const { editing } = useEditMode();
+  if (!editing) return null;
+  return (
+    <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-end gap-2 px-4 pt-3 text-xs lg:px-6">
+      <span className="text-muted-foreground">Sort menu names:</span>
+      {["Popular", "Price: Low to High", "Price: High to Low"].map((option) => (
+        <EditableText key={option} id={`sort.${option}`} className="rounded bg-muted px-2 py-0.5">
+          {option}
+        </EditableText>
+      ))}
+    </div>
+  );
+}
+
 function SearchPage() {
+  const { content } = useEditMode();
   const { q } = Route.useSearch();
   const query = q ?? "";
   const trimmedQuery = query.trim();
@@ -53,23 +72,34 @@ function SearchPage() {
   return (
     <main className="min-h-screen bg-background pb-20 md:pb-0">
       <SiteHeader defaultQuery={query} />
+      <SearchSortNames />
 
       <div className="mx-auto max-w-7xl px-4 py-10 lg:px-6">
         {!trimmedQuery ? (
           <div className="my-16 text-center">
             <CakeSlice className="mx-auto text-muted-foreground" size={36} />
-            <h1 className="mt-3 font-display text-2xl">Search for cakes</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <EditableText id="search.empty.title" as="h1" className="mt-3 block font-display text-2xl">
+              Search for cakes
+            </EditableText>
+            <EditableText id="search.empty.text" as="p" className="mt-1 block text-sm text-muted-foreground">
               Try a flavour, an occasion, or a cake name.
-            </p>
+            </EditableText>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
               <div className="min-w-0">
-                <h1 className="font-display text-3xl">Results for "{trimmedQuery}"</h1>
+                <h1 className="font-display text-3xl">
+                  <EditableText id="search.resultsFor">Results for</EditableText> "{trimmedQuery}"
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {searching ? "Searching…" : `${sortedResults.length} cakes match your search.`}
+                  {searching ? (
+                    <EditableText id="search.searching">Searching…</EditableText>
+                  ) : (
+                    <>
+                      {sortedResults.length} <EditableText id="search.matchCount">cakes match your search.</EditableText>
+                    </>
+                  )}
                 </p>
               </div>
               <label className="relative hidden sm:block">
@@ -78,9 +108,11 @@ function SearchPage() {
                   onChange={(e) => setSort(e.target.value)}
                   className="h-10 appearance-none rounded-md border border-input bg-background pl-4 pr-9 text-sm font-semibold outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option>Popular</option>
-                  <option>Price: Low to High</option>
-                  <option>Price: High to Low</option>
+                  {["Popular", "Price: Low to High", "Price: High to Low"].map((option) => (
+                    <option key={option} value={option}>
+                      {content[`sort.${option}`] ?? option}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown
                   size={15}
@@ -93,6 +125,7 @@ function SearchPage() {
               <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
                 {sortedResults.map((result) => (
                   <CakeCard
+                    productId={result.id}
                     key={result.id}
                     href={result.href}
                     image={result.image}
@@ -108,12 +141,16 @@ function SearchPage() {
             ) : !searching ? (
               <div className="my-16 text-center">
                 <CakeSlice className="mx-auto text-muted-foreground" size={36} />
-                <h2 className="mt-3 font-display text-2xl">No cakes found</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <EditableText id="search.none.title" as="h2" className="mt-3 block font-display text-2xl">
+                  No cakes found
+                </EditableText>
+                <EditableText id="search.none.text" as="p" className="mt-1 block text-sm text-muted-foreground">
                   Try another name, or browse a category instead.
-                </p>
+                </EditableText>
                 <Button className="mt-4" asChild>
-                  <Link to="/">See all cakes</Link>
+                  <Link to="/">
+                    <EditableText id="category.empty.button">See all cakes</EditableText>
+                  </Link>
                 </Button>
               </div>
             ) : null}

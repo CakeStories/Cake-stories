@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { ArrowDownAZ, ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { EditableText } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 
 export const SORT_OPTIONS = [
   "Popular",
@@ -134,6 +136,10 @@ export function CategoryFilterBar({
   total: number;
 }) {
   const [open, setOpen] = useState(false);
+  const { content, editing } = useEditMode();
+  const sortName = (option: string) => content[`sort.${option}`] ?? option;
+  const priceName = (band: { id: string; label: string }) => content[`filter.price.${band.id}`] ?? band.label;
+  const flavourName = (label: string) => content[`filter.flavour.${label}`] ?? label;
   const activeCount = state.flavours.length + (state.priceBand ? 1 : 0);
   const hasFilters = activeCount > 0;
 
@@ -167,7 +173,7 @@ export function CategoryFilterBar({
             }`}
           >
             <SlidersHorizontal size={16} />
-            Filters
+            <EditableText id="filter.button">Filters</EditableText>
             {hasFilters && (
               <span className="grid size-5 place-items-center rounded-full bg-primary text-[11px] text-primary-foreground">
                 {activeCount}
@@ -188,7 +194,9 @@ export function CategoryFilterBar({
             className="h-10 appearance-none rounded-md border border-input bg-background pl-9 pr-9 text-sm font-semibold outline-none focus:ring-2 focus:ring-ring"
           >
             {SORT_OPTIONS.filter((o) => !hidePriceSort || !o.startsWith("Price")).map((option) => (
-              <option key={option}>{option}</option>
+              <option key={option} value={option}>
+                {sortName(option)}
+              </option>
             ))}
           </select>
           <ChevronDown
@@ -199,13 +207,25 @@ export function CategoryFilterBar({
 
       </div>
 
+      {editing && (
+        // The sort menu's names can't be typed over inside the dropdown, so they're listed here while editing.
+        <div className="mt-3 flex flex-wrap items-center justify-end gap-2 text-xs">
+          <span className="text-muted-foreground">Sort menu names:</span>
+          {SORT_OPTIONS.map((option) => (
+            <EditableText key={option} id={`sort.${option}`} className="rounded bg-muted px-2 py-0.5">
+              {option}
+            </EditableText>
+          ))}
+        </div>
+      )}
+
       {open && canFilter && (
         <div className="mt-4 space-y-4 border-t border-border pt-4">
           {flavourOptions.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <EditableText id="filter.flavourTitle" as="p" className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Flavour
-              </p>
+              </EditableText>
               <div className="flex flex-wrap gap-2">
                 {flavourOptions.map((label) => (
                   <button
@@ -215,7 +235,7 @@ export function CategoryFilterBar({
                     onClick={() => toggleFlavour(label)}
                     className={chip(state.flavours.includes(label))}
                   >
-                    {label}
+                    <EditableText id={`filter.flavour.${label}`}>{label}</EditableText>
                   </button>
                 ))}
               </div>
@@ -223,9 +243,9 @@ export function CategoryFilterBar({
           )}
           {priceOptions.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <EditableText id="filter.priceTitle" as="p" className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Price
-              </p>
+              </EditableText>
               <div className="flex flex-wrap gap-2">
                 {priceOptions.map((band) => (
                   <button
@@ -237,7 +257,7 @@ export function CategoryFilterBar({
                     }
                     className={chip(state.priceBand === band.id)}
                   >
-                    {band.label}
+                    <EditableText id={`filter.price.${band.id}`}>{band.label}</EditableText>
                   </button>
                 ))}
               </div>
@@ -255,7 +275,7 @@ export function CategoryFilterBar({
               onClick={() => toggleFlavour(label)}
               className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
             >
-              {label} <X size={12} />
+              {flavourName(label)} <X size={12} />
             </button>
           ))}
           {state.priceBand && (
@@ -264,7 +284,11 @@ export function CategoryFilterBar({
               onClick={() => onChange({ ...state, priceBand: null })}
               className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
             >
-              {PRICE_BANDS.find((b) => b.id === state.priceBand)?.label} <X size={12} />
+              {(() => {
+                const band = PRICE_BANDS.find((b) => b.id === state.priceBand);
+                return band ? priceName(band) : null;
+              })()}{" "}
+              <X size={12} />
             </button>
           )}
           <button
@@ -272,7 +296,7 @@ export function CategoryFilterBar({
             onClick={() => onChange({ ...state, flavours: [], priceBand: null })}
             className="text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
           >
-            Clear all
+            <EditableText id="filter.clearAll">Clear all</EditableText>
           </button>
         </div>
       )}

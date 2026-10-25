@@ -4,7 +4,8 @@ import { LoopingRail } from "@/components/looping-rail";
 import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { onProductImageError } from "@/lib/image-fallback";
 import { responsiveImage } from "@/lib/supabase";
-import { AdminShortcut } from "@/components/editable";
+import { AdminShortcut, EditableImage, EditableText } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 
 export type TabbedCake = {
   id: string;
@@ -47,6 +48,9 @@ function RailCard({ cake, duplicate = false }: { cake: TabbedCake; duplicate?: b
   const settings = useStoreSettings();
   const shown = withSitewideDiscount(cake.minPrice, cake.minPriceMrp, settings);
   const off = discountLabel(shown.price, shown.mrp);
+  const { saveProduct } = useEditMode();
+  // Only the first copy of a repeated card gets the editing tools.
+  const edit = !duplicate;
 
   return (
     <Link
@@ -55,43 +59,68 @@ function RailCard({ cake, duplicate = false }: { cake: TabbedCake; duplicate?: b
       className="group block w-[170px] overflow-hidden rounded-xl border border-border/70 bg-background shadow-sm transition hover:shadow-md sm:w-[200px] lg:w-[218px]"
     >
       <div className="relative aspect-square overflow-hidden bg-muted">
-        <img
-          {...responsiveImage(cake.image, 240, "220px")}
-          alt={cake.title}
-          loading="lazy"
-          onError={onProductImageError}
-          className={`h-full w-full object-cover transition duration-300 group-hover:scale-105 ${
-            cake.outOfStock ? "opacity-50" : ""
-          }`}
-        />
+        <EditableImage
+          fallback={cake.image}
+          buttonPosition="right-2 top-2"
+          {...(edit && { onSave: (image_url: string) => saveProduct(cake.id, { image_url }) })}
+        >
+          {(src) => (
+            <img
+              {...responsiveImage(src, 240, "220px")}
+              alt={cake.title}
+              loading="lazy"
+              onError={onProductImageError}
+              className={`h-full w-full object-cover transition duration-300 group-hover:scale-105 ${
+                cake.outOfStock ? "opacity-50" : ""
+              }`}
+            />
+          )}
+        </EditableImage>
         {cake.badge && !cake.outOfStock && (
           <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow">
-            {cake.badge}
+            <EditableText {...(edit && { onSave: (badge: string) => saveProduct(cake.id, { badge }) })}>
+              {cake.badge}
+            </EditableText>
           </span>
         )}
         {cake.outOfStock && (
           <span className="absolute inset-x-0 bottom-0 bg-foreground/80 py-1 text-center text-[11px] font-semibold text-background">
-            Currently unavailable
+            <EditableText id="card.unavailable">Currently unavailable</EditableText>
           </span>
         )}
         {!duplicate && (
           <AdminShortcut
-            label="Edit cake"
+            label={cake.enquiry ? "More" : "Price & more"}
             search={{ tab: "products", q: cake.title }}
             className="absolute bottom-2 right-2"
           />
         )}
       </div>
       <div className="px-3 pb-3 pt-2.5">
-        <p className="truncate text-[13px] font-medium text-foreground">{cake.title}</p>
+        <EditableText
+          as="p"
+          className="block truncate text-[13px] font-medium text-foreground"
+          {...(edit && { onSave: (name: string) => saveProduct(cake.id, { name }) })}
+        >
+          {cake.title}
+        </EditableText>
         <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-sm">
           <strong className={cake.enquiry ? "text-[13px] font-semibold text-primary" : "text-[15px] font-bold"}>
-            {cake.enquiry ? "Enquire for price" : shown.price > 0 ? `₹${shown.price}` : "Price on request"}
+            {cake.enquiry ? (
+              <EditableText id="card.enquire">Enquire for price</EditableText>
+            ) : shown.price > 0 ? (
+              `₹${shown.price}`
+            ) : (
+              <EditableText id="card.priceOnRequest">Price on request</EditableText>
+            )}
           </strong>
           {off && shown.price > 0 && !cake.enquiry && (
             <>
               <span className="text-[11px] text-muted-foreground line-through">₹{shown.mrp}</span>
-              <span className="text-[11px] font-semibold text-success">{off}OFF</span>
+              <span className="text-[11px] font-semibold text-success">
+                {off}
+                <EditableText id="card.off">OFF</EditableText>
+              </span>
             </>
           )}
         </p>

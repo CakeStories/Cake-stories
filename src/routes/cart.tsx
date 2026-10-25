@@ -7,6 +7,7 @@ import { useCart, type CartLine } from "@/lib/cart";
 import { FREE_DELIVERY_THRESHOLD, deliveryFeeFor } from "@/lib/pricing";
 import { DEFAULT_PRODUCT_IMAGE, onProductImageError } from "@/lib/image-fallback";
 import { resizedImageUrl } from "@/lib/supabase";
+import { EditableText } from "@/components/editable";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({ meta: [{ title: "Your Cart | Cake Stories" }, { name: "robots", content: "noindex" }] }),
@@ -42,15 +43,15 @@ function CartPage() {
       <SiteHeader />
 
       <div className="mx-auto max-w-5xl px-4 py-8 lg:px-6">
-        <h1 className="font-display text-3xl sm:text-4xl">Your Cart</h1>
+        <EditableText id="cart.title" as="h1" className="block font-display text-3xl sm:text-4xl">Your Cart</EditableText>
 
         {items.length === 0 ? (
           <div className="my-16 text-center">
             <ShoppingBag className="mx-auto text-muted-foreground" size={36} />
-            <h3 className="mt-3 font-display text-2xl">Your cart is empty</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Add a cake to get started.</p>
+            <EditableText id="cart.empty.title" as="h3" className="mt-3 block font-display text-2xl">Your cart is empty</EditableText>
+            <EditableText id="cart.empty.text" as="p" className="mt-1 block text-sm text-muted-foreground">Add a cake to get started.</EditableText>
             <Button className="mt-4" asChild>
-              <Link to="/">Browse cakes</Link>
+              <Link to="/"><EditableText id="common.browseCakes">Browse cakes</EditableText></Link>
             </Button>
           </div>
         ) : (
@@ -82,7 +83,7 @@ function CartPage() {
                       )}
                       {item.specialInstructions && (
                         <p className="text-xs text-muted-foreground">
-                          Note: {item.specialInstructions}
+                          <EditableText id="cart.note">Note</EditableText>: {item.specialInstructions}
                         </p>
                       )}
                     </div>
@@ -124,33 +125,33 @@ function CartPage() {
             </ul>
 
             <aside className="h-fit rounded-md border border-border p-5">
-              <h2 className="font-display text-xl">Order Summary</h2>
+              <EditableText id="cart.summary" as="h2" className="block font-display text-xl">Order Summary</EditableText>
               <dl className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Subtotal</dt>
+                  <dt className="text-muted-foreground"><EditableText id="cart.subtotal">Subtotal</EditableText></dt>
                   <dd>₹{subtotal}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Delivery</dt>
-                  <dd>{deliveryFee === 0 ? "Free" : `₹${deliveryFee}`}</dd>
+                  <dt className="text-muted-foreground"><EditableText id="cart.delivery">Delivery</EditableText></dt>
+                  <dd>{deliveryFee === 0 ? <EditableText id="cart.free">Free</EditableText> : `₹${deliveryFee}`}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">GST (5% cakes, 18% party items)</dt>
-                  <dd className="text-muted-foreground">At checkout</dd>
+                  <dt className="text-muted-foreground"><EditableText id="cart.gst">GST (5% cakes, 18% party items)</EditableText></dt>
+                  <dd className="text-muted-foreground"><EditableText id="cart.atCheckout">At checkout</EditableText></dd>
                 </div>
                 <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
-                  <dt>Total before GST</dt>
+                  <dt><EditableText id="cart.totalBeforeGst">Total before GST</EditableText></dt>
                   <dd>₹{total}</dd>
                 </div>
               </dl>
               {subtotal < FREE_DELIVERY_THRESHOLD && (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Add ₹{FREE_DELIVERY_THRESHOLD - subtotal} more for free delivery. Store pickup is
-                  always free.
+                  <EditableText id="cart.addMore">Add</EditableText> ₹{FREE_DELIVERY_THRESHOLD - subtotal}{" "}
+                  <EditableText id="cart.moreForFree">more for free delivery. Store pickup is always free.</EditableText>
                 </p>
               )}
               <Button size="lg" className="mt-5 w-full" asChild>
-                <Link to="/checkout">Proceed to Checkout</Link>
+                <Link to="/checkout"><EditableText id="cart.checkout">Proceed to Checkout</EditableText></Link>
               </Button>
             </aside>
           </div>

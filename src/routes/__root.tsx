@@ -19,22 +19,21 @@ import { StoreSettingsProvider } from "../lib/store-settings";
 import { EditModeProvider } from "../lib/edit-mode";
 import { fetchSiteContent } from "../lib/site-content";
 import { EditToolbar } from "../components/editable";
+import { EditableText } from "../components/editable";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
+        <EditableText id="notFound.title" as="h2" className="mt-4 block text-xl font-semibold text-foreground">Page not found</EditableText>
+        <EditableText id="notFound.text" as="p" className="mt-2 block text-sm text-muted-foreground">The page you're looking for doesn't exist or has been moved.</EditableText>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            <EditableText id="notFound.home">Go home</EditableText>
           </Link>
         </div>
       </div>

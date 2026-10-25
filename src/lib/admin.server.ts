@@ -1,13 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireServerEnv, serverEnv } from "@/lib/env.server";
-import {
-  getServiceConfig,
-  PRODUCT_IMAGES_BUCKET,
-  serviceRest as adminRest,
-  uploadImage,
-} from "@/lib/service.server";
+import { getServiceConfig, PRODUCT_IMAGES_BUCKET, serviceRest, uploadImage } from "@/lib/service.server";
 import { SITE_CONTENT_PATH } from "@/lib/site-content";
+import { clearReadCache } from "@/lib/supabase";
+
+/** Every admin read/write goes through here; a change also drops this server's cached catalogue reads. */
+async function adminRest<T>(...args: Parameters<typeof serviceRest>): Promise<T> {
+  const result = await serviceRest<T>(...args);
+  if ((args[1]?.method ?? "GET") !== "GET") clearReadCache();
+  return result;
+}
 import { findSuccessfulPayment, markOrderPaid } from "@/lib/payments.server";
 
 /**

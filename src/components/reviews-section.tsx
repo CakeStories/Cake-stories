@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Star } from "lucide-react";
 import { getGoogleReviews } from "@/lib/reviews.server";
+import { EditableText } from "@/components/editable";
 
 /**
  * Live Google reviews. The whole section stays hidden until reviews are
@@ -19,12 +20,16 @@ export function ReviewsSection() {
   return (
     <section className="bg-cream py-14">
       <div className="mx-auto max-w-7xl px-4 lg:px-6">
-        <h2 className="font-display text-3xl">Customer reviews</h2>
+        <EditableText id="reviews.title" as="h2" className="font-display text-3xl">
+          Customer reviews
+        </EditableText>
         <div className="mt-6">
           <div className="flex items-center gap-2 text-sm">
             <Star size={16} className="fill-primary text-primary" />
             <strong>{data.rating.toFixed(1)}</strong>
-            <span className="text-muted-foreground">({data.totalReviews} Google reviews)</span>
+            <span className="text-muted-foreground">
+              ({data.totalReviews} <EditableText id="reviews.google">Google reviews</EditableText>)
+            </span>
           </div>
           <div className="scrollbar-none mt-5 flex snap-x gap-4 overflow-x-auto pb-3">
             {data.reviews.map((review, i) => (

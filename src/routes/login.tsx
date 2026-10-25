@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/button";
 import { useAuth } from "@/lib/auth";
+import { EditableText } from "@/components/editable";
 
 export const Route = createFileRoute("/login")({
   // Only same-site paths are accepted, so a crafted link can't bounce a
@@ -98,25 +99,24 @@ function LoginPage() {
 
       <div className="mx-auto max-w-sm px-4 py-16 lg:px-6">
         <h1 className="font-display text-3xl">
-          {mode === "signin" ? "Sign in" : "Create an account"}
+          {mode === "signin" ? <EditableText id="login.title.signin">Sign in</EditableText> : <EditableText id="login.title.signup">Create an account</EditableText>}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "signin"
-            ? "Sign in to track your orders."
-            : "Save your details and track every order."}
+          {mode === "signin" ? (
+            <EditableText id="login.intro.signin">Sign in to track your orders.</EditableText>
+          ) : (
+            <EditableText id="login.intro.signup">Save your details and track every order.</EditableText>
+          )}
         </p>
 
         {confirmationSent ? (
           <div className="mt-8 rounded-md border border-border bg-card p-5 text-sm">
-            <p className="font-medium">Check your email</p>
+            <EditableText id="login.check.title" as="p" className="block font-medium">Check your email</EditableText>
             <p className="mt-1 text-muted-foreground">
-              We've sent a confirmation link to <strong>{email}</strong>. Click it, then come back
-              and sign in.
+              <EditableText id="login.check.sentTo">We've sent a confirmation link to</EditableText> <strong>{email}</strong>.{" "}
+              <EditableText id="login.check.then">Click it, then come back and sign in.</EditableText>
             </p>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Didn't get it? Check spam first — confirmation emails can take a few minutes, and some
-              inboxes filter them.
-            </p>
+            <EditableText id="login.check.spam" as="p" className="mt-3 block text-xs text-muted-foreground">Didn't get it? Check spam first — confirmation emails can take a few minutes, and some inboxes filter them.</EditableText>
 
             {resendError && (
               <p
@@ -127,7 +127,7 @@ function LoginPage() {
               </p>
             )}
             {resendState === "sent" && resendCooldown > 0 && (
-              <p className="mt-2 text-xs text-success">Sent again — check your inbox.</p>
+              <EditableText id="login.sentAgain" as="p" className="mt-2 block text-xs text-success">Sent again — check your inbox.</EditableText>
             )}
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -138,16 +138,18 @@ function LoginPage() {
               >
                 {resendState === "busy" ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Sending…
+                    <Loader2 size={16} className="animate-spin" /> <EditableText id="login.sending">Sending…</EditableText>
                   </>
                 ) : resendCooldown > 0 ? (
-                  `Resend in ${resendCooldown}s`
+                  <>
+                    <EditableText id="login.resendIn">Resend in</EditableText> {resendCooldown}s
+                  </>
                 ) : (
-                  "Resend confirmation email"
+                  <EditableText id="login.resend">Resend confirmation email</EditableText>
                 )}
               </Button>
               <Button variant="ghost" onClick={() => setMode("signin")}>
-                Back to sign in
+                <EditableText id="login.back">Back to sign in</EditableText>
               </Button>
             </div>
           </div>
@@ -161,18 +163,18 @@ function LoginPage() {
               onClick={() => signInWithGoogle(redirect)}
             >
               <GoogleIcon />
-              Continue with Google
+              <EditableText id="login.google">Continue with Google</EditableText>
             </Button>
 
             <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
               <span className="h-px flex-1 bg-border" />
-              or continue with email
+              <EditableText id="login.or">or continue with email</EditableText>
               <span className="h-px flex-1 bg-border" />
             </div>
 
             <form onSubmit={submit} className="space-y-4">
               <label className="block text-sm">
-                <span className="mb-1 block font-medium text-foreground">Email</span>
+                <EditableText id="login.email" as="span" className="mb-1 block font-medium text-foreground">Email</EditableText>
               <input
                 type="email"
                 required
@@ -183,7 +185,7 @@ function LoginPage() {
               />
             </label>
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-foreground">Password</span>
+              <EditableText id="login.password" as="span" className="mb-1 block font-medium text-foreground">Password</EditableText>
               <input
                 type="password"
                 required
@@ -207,36 +209,36 @@ function LoginPage() {
             <Button type="submit" size="lg" className="w-full" disabled={busy}>
               {busy ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Please wait…
+                  <Loader2 size={16} className="animate-spin" /> <EditableText id="login.wait">Please wait…</EditableText>
                 </>
               ) : mode === "signin" ? (
-                "Sign in"
+                <EditableText id="login.title.signin">Sign in</EditableText>
               ) : (
-                "Create account"
+                <EditableText id="login.create">Create account</EditableText>
               )}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
               {mode === "signin" ? (
                 <>
-                  New here?{" "}
+                  <EditableText id="login.newHere">New here?</EditableText>{" "}
                   <button
                     type="button"
                     className="font-medium text-primary underline"
                     onClick={() => setMode("signup")}
                   >
-                    Create an account
+                    <EditableText id="login.title.signup">Create an account</EditableText>
                   </button>
                 </>
               ) : (
                 <>
-                  Already have an account?{" "}
+                  <EditableText id="login.haveAccount">Already have an account?</EditableText>{" "}
                   <button
                     type="button"
                     className="font-medium text-primary underline"
                     onClick={() => setMode("signin")}
                   >
-                    Sign in
+                    <EditableText id="login.title.signin">Sign in</EditableText>
                   </button>
                 </>
               )}
@@ -247,7 +249,7 @@ function LoginPage() {
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
           <Link to="/" className="underline">
-            Continue browsing without signing in
+            <EditableText id="login.skip">Continue browsing without signing in</EditableText>
           </Link>
         </p>
       </div>

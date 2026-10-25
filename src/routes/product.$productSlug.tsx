@@ -10,6 +10,8 @@ import { getPartyEssentials } from "@/lib/party-essentials";
 import { onProductImageError } from "@/lib/image-fallback";
 import { responsiveImage } from "@/lib/supabase";
 import { isEnquiryCategory } from "@/lib/enquiry";
+import { EditableImage, EditableText } from "@/components/editable";
+import { useEditMode } from "@/lib/edit-mode";
 
 export const Route = createFileRoute("/product/$productSlug")({
   loader: async ({ params }) => {
@@ -58,6 +60,10 @@ export const Route = createFileRoute("/product/$productSlug")({
 function ProductPage() {
   const data = Route.useLoaderData();
   const isCatalog = data.kind === "catalog";
+  const { saveProduct, saveCategory } = useEditMode();
+  // Hand-entered catalogue items live in the code, not the database, so only database products are edited here.
+  const productId = isCatalog ? undefined : data.cake.id;
+  const categoryId = isCatalog ? undefined : data.category?.id;
 
   const title = isCatalog ? data.product.name : data.cake.name;
   const badge = isCatalog ? data.product.badge : data.cake.badge;
@@ -100,7 +106,7 @@ function ProductPage() {
       <div className="mx-auto max-w-7xl px-4 lg:px-6">
         <nav className="py-4 text-xs text-muted-foreground" aria-label="Breadcrumb">
           <Link to="/" className="hover:text-primary">
-            Home
+            <EditableText id="breadcrumb.home">Home</EditableText>
           </Link>
           <span className="mx-1.5">/</span>
           {categoryName && categorySlug && (
@@ -110,7 +116,9 @@ function ProductPage() {
                 params={{ categorySlug }}
                 className="hover:text-primary"
               >
-                {categoryName}
+                <EditableText {...(categoryId && { onSave: (name: string) => saveCategory(categoryId, { name }) })}>
+                  {categoryName}
+                </EditableText>
               </Link>
               <span className="mx-1.5">/</span>
             </>
@@ -120,16 +128,24 @@ function ProductPage() {
 
         <div className="grid grid-cols-1 items-stretch gap-8 border-b border-border pb-10 sm:grid-cols-2">
           {/* A plain in-flow square image: iOS Safari collapsed the old aspect-ratio box (holding only an absolutely positioned image) to 0x0. */}
-          <div className="overflow-hidden rounded-lg bg-muted sm:sticky sm:top-24 sm:self-start">
-            <img
-              {...responsiveImage(image, 640, "(min-width: 640px) 50vw, 100vw")}
-              fetchPriority="high"
-              alt={title}
-              onError={onProductImageError}
-              className={`block aspect-square w-full object-cover ${categorySlug === "birthday-bash" ? "" : "sm:object-contain"}`}
-              width={816}
-              height={816}
-            />
+          <div className="relative overflow-hidden rounded-lg bg-muted sm:sticky sm:top-24 sm:self-start">
+            <EditableImage
+              fallback={image}
+              buttonPosition="left-3 top-3"
+              {...(productId && { onSave: (image_url: string) => saveProduct(productId, { image_url }) })}
+            >
+              {(src) => (
+                <img
+                  {...responsiveImage(src, 640, "(min-width: 640px) 50vw, 100vw")}
+                  fetchPriority="high"
+                  alt={title}
+                  onError={onProductImageError}
+                  className={`block aspect-square w-full object-cover ${categorySlug === "birthday-bash" ? "" : "sm:object-contain"}`}
+                  width={816}
+                  height={816}
+                />
+              )}
+            </EditableImage>
           </div>
 
           {isCatalog ? (
@@ -176,6 +192,7 @@ function ProductPage() {
               }}
               outOfStock={data.cake.outOfStock}
               enquiry={isEnquiryCategory(categorySlug)}
+              productId={data.cake.id}
               partyEssentials={data.partyEssentials}
             />
           )}
@@ -183,11 +200,14 @@ function ProductPage() {
 
         {related.length > 0 && (
           <section className="py-10">
-            <h2 className="font-display text-2xl">More from {categoryName}</h2>
+            <h2 className="font-display text-2xl">
+              <EditableText id="related.moreFrom">More from</EditableText> {categoryName}
+            </h2>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {related.map((item) => (
                 <CakeCard
                   key={item.id}
+                  {...(!isCatalog && { productId: item.id })}
                   href={item.href}
                   image={item.image}
                   title={item.title}

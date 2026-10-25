@@ -1,3 +1,5 @@
+import { EditableText } from "@/components/editable";
+
 /** Returns the discount % (rounded) if `mrp` is a genuine markup over `price`, else null. */
 export function discountPercent(price: number, mrp?: number | null): number | null {
   if (!mrp || mrp <= price) return null;
@@ -25,7 +27,9 @@ export function PriceTag({
   // A ₹0 price means the shop quotes it on request (via WhatsApp).
   if (price <= 0)
     return (
-      <strong className={size === "sm" ? "text-xs" : classes.price}>Price on request</strong>
+      <strong className={size === "sm" ? "text-xs" : classes.price}>
+        <EditableText id="card.priceOnRequest">Price on request</EditableText>
+      </strong>
     );
 
   return (
@@ -35,7 +39,7 @@ export function PriceTag({
         <>
           <span className={`${classes.mrp} text-muted-foreground line-through`}>₹{mrp}</span>
           <span className={`${classes.badge} rounded-sm bg-success/15 font-bold uppercase text-success`}>
-            {pct}% off
+            {pct}% <EditableText id="price.off">off</EditableText>
           </span>
         </>
       )}
