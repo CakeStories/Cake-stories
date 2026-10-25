@@ -1,7 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireServerEnv, serverEnv } from "@/lib/env.server";
-import { serviceRest as adminRest, uploadImage } from "@/lib/service.server";
+import {
+  getServiceConfig,
+  PRODUCT_IMAGES_BUCKET,
+  serviceRest as adminRest,
+  uploadImage,
+} from "@/lib/service.server";
+import { SITE_CONTENT_PATH } from "@/lib/site-content";
 import { findSuccessfulPayment, markOrderPaid } from "@/lib/payments.server";
 
 /**
@@ -1180,6 +1186,67 @@ export const adminDeleteCoupon = createServerFn({ method: "POST" })
     await assertValidToken(data.token);
     await adminRest(`coupons?id=eq.${data.couponId}`, { method: "DELETE" });
     return { deleted: true };
+  });
+
+/* ---------------------------------------------------------- website editor --- */
+
+/** Reads the current site content file with the service key (skips the public CDN cache). */
+async function readSiteContent(): Promise<Record<string, string>> {
+  const { url, serviceKey } = getServiceConfig();
+  const response = await fetch(
+    `${url}/storage/v1/object/authenticated/${PRODUCT_IMAGES_BUCKET}/${SITE_CONTENT_PATH}`,
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+  );
+  if (response.status === 400 || response.status === 404) return {};
+  if (!response.ok) throw new Error(`Couldn't read the site content (${response.status}).`);
+  return (await response.json()) as Record<string, string>;
+}
+
+/**
+ * Saves one edited text or photo from the website editor. `value: null` puts
+ * that spot back to the built-in default.
+ */
+export const adminSaveSiteContent = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        token: z.string(),
+        key: z.string().regex(/^[a-z0-9._-]{1,120}$/),
+        value: z.string().max(5000).nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }) => {
+    await assertValidToken(data.token);
+    const content = await readSiteContent();
+    if (data.value === null) delete content[data.key];
+    else content[data.key] = data.value;
+
+    const { url, serviceKey } = getServiceConfig();
+    const response = await fetch(
+      `${url}/storage/v1/object/${PRODUCT_IMAGES_BUCKET}/${SITE_CONTENT_PATH}`,
+      {
+        method: "POST",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          "x-upsert": "true",
+          // Edits should show up straight away, not after a cached copy expires.
+          "cache-control": "max-age=0",
+        },
+        body: JSON.stringify(content),
+      },
+    );
+    if (!response.ok) throw new Error(`Couldn't save (${response.status}): ${await response.text()}`);
+    return { content };
+  });
+
+export const adminUploadSiteImage = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object(uploadSchema).parse(data))
+  .handler(async ({ data }) => {
+    await assertValidToken(data.token);
+    return { imageUrl: await uploadImage("site", data.fileName, data.contentType, data.base64) };
   });
 
 /* ------------------------------------------------------------- newsletter --- */

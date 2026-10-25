@@ -16,6 +16,9 @@ import { CartProvider } from "../lib/cart";
 import { WishlistProvider } from "../lib/wishlist";
 import { AuthProvider } from "../lib/auth";
 import { StoreSettingsProvider } from "../lib/store-settings";
+import { EditModeProvider } from "../lib/edit-mode";
+import { fetchSiteContent } from "../lib/site-content";
+import { EditToolbar } from "../components/editable";
 
 function NotFoundComponent() {
   return (
@@ -78,6 +81,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  // Text and photos changed in the website editor; loaded once, then kept fresh by EditModeProvider.
+  loader: () => fetchSiteContent(),
+  shouldReload: false,
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -142,18 +148,22 @@ function NavigationProgress() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const siteContent = Route.useLoaderData();
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <StoreSettingsProvider>
-          <CartProvider>
-            <WishlistProvider>
-              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-              <NavigationProgress />
-              <Outlet />
-            </WishlistProvider>
-          </CartProvider>
+          <EditModeProvider initialContent={siteContent}>
+            <CartProvider>
+              <WishlistProvider>
+                {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                <NavigationProgress />
+                <Outlet />
+                <EditToolbar />
+              </WishlistProvider>
+            </CartProvider>
+          </EditModeProvider>
         </StoreSettingsProvider>
       </AuthProvider>
     </QueryClientProvider>

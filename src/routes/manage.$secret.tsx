@@ -11,6 +11,7 @@ import {
   Loader2,
   LogOut,
   Megaphone,
+  Pencil,
   PackageCheck,
   Plus,
   RefreshCw,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/button";
 import { resizedImageUrl } from "@/lib/supabase";
+import { startEditMode } from "@/lib/edit-mode";
 import {
   adminAddCategoryLink,
   adminAddVariant,
@@ -90,6 +92,7 @@ export const Route = createFileRoute("/manage/$secret")({
 });
 
 const TOKEN_KEY = "cake-stories:admin-token";
+const ADMIN_TABS = ["orders", "products", "banners", "store", "extras", "coupons", "newsletter", "categories"] as const;
 
 function AdminPage() {
   const { secret: urlToken } = Route.useParams();
@@ -265,7 +268,11 @@ function Dashboard({
 
   const [tab, setTab] = useState<
     "orders" | "products" | "banners" | "store" | "extras" | "coupons" | "newsletter" | "categories"
-  >("orders");
+  >(() => {
+    // Shortcuts from the website editor open a tab directly: ?tab=products&q=Bluey
+    const wanted = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("tab");
+    return ADMIN_TABS.find((t) => t === wanted) ?? "orders";
+  });
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 lg:px-6">
@@ -276,9 +283,19 @@ function Dashboard({
             Manage orders, prices, offers, photos and banners. Changes go live immediately.
           </p>
         </div>
-        <Button variant="secondary" onClick={onSignOut}>
-          <LogOut size={15} /> Sign out
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() => {
+              startEditMode(window.location.pathname);
+              window.location.href = "/";
+            }}
+          >
+            <Pencil size={15} /> Edit website
+          </Button>
+          <Button variant="secondary" onClick={onSignOut}>
+            <LogOut size={15} /> Sign out
+          </Button>
+        </div>
       </header>
 
       <div className="mt-5 flex gap-2 overflow-x-auto border-b border-border">
@@ -364,8 +381,13 @@ function ProductsSection({
   error: string | null;
   onChanged: () => void;
 }) {
-  const [categoryId, setCategoryId] = useState("");
-  const [query, setQuery] = useState("");
+  // ?category=<id> and ?q=<words> come from the website editor's shortcuts.
+  const [categoryId, setCategoryId] = useState(() =>
+    typeof window === "undefined" ? "" : (new URLSearchParams(window.location.search).get("category") ?? ""),
+  );
+  const [query, setQuery] = useState(() =>
+    typeof window === "undefined" ? "" : (new URLSearchParams(window.location.search).get("q") ?? ""),
+  );
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [open, setOpen] = useState<Set<string>>(new Set());
 

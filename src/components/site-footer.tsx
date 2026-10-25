@@ -12,6 +12,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/button";
+import { EditableText } from "@/components/editable";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";
 import { subscribeToNewsletter } from "@/lib/newsletter.server";
@@ -30,13 +31,19 @@ export function SiteFooter() {
       <section className="border-b border-border bg-background py-12">
         <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end lg:px-6">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            <EditableText
+              id="footer.newsletter.kicker"
+              as="p"
+              className="text-xs font-bold uppercase tracking-widest text-primary"
+            >
               Fresh from the oven
-            </p>
-            <h2 className="mt-2 font-display text-3xl">Get our newsletter updates</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            </EditableText>
+            <EditableText id="footer.newsletter.title" as="h2" className="mt-2 font-display text-3xl">
+              Get our newsletter updates
+            </EditableText>
+            <EditableText id="footer.newsletter.intro" as="p" className="mt-2 text-sm text-muted-foreground">
               New flavours, celebration ideas and special offers, sent occasionally.
-            </p>
+            </EditableText>
           </div>
           <NewsletterForm />
         </div>

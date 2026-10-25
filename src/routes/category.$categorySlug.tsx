@@ -19,6 +19,7 @@ import { CakeTabsRail, type TabbedCake } from "@/components/cake-tabs-rail";
 import { useStoreSettings } from "@/lib/store-settings";
 import { isEnquiryCategory } from "@/lib/enquiry";
 import { characterIcon } from "@/lib/character-icons";
+import { AdminShortcut } from "@/components/editable";
 import {
   CategoryFilterBar,
   DEFAULT_FILTERS,
@@ -277,6 +278,11 @@ function CategoryPage() {
           </div>
         ) : (
         <>
+        <div className="flex flex-wrap gap-2 empty:hidden">
+          <AdminShortcut label="Add a cake here" search={{ tab: "products", category: category.id }} />
+          <AdminShortcut label="Rename this category" search={{ tab: "categories" }} />
+          <AdminShortcut label="Change banners" search={{ tab: "banners" }} />
+        </div>
         <CategoryBanners banners={categoryBanners.top} />
 
         {isBirthdayBash ? (

@@ -16,6 +16,7 @@ import bannerClassics from "@/assets/cake-stories-classics.jpg";
 import bannerDesigner from "@/assets/cake-stories-designer.jpg";
 import bannerCustomize from "@/assets/cake-stories-customize.jpg";
 import { resizedImageUrl, responsiveImage } from "@/lib/supabase";
+import { AdminShortcut, EditableImage, EditableText } from "@/components/editable";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -298,6 +299,11 @@ function CakeStore() {
               </Link>
             ),
           )}
+          <AdminShortcut
+            label="Change banners"
+            search={{ tab: "banners" }}
+            className="absolute right-3 top-3"
+          />
           <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
             {banners.map((banner, index) => (
               <button
@@ -317,19 +323,25 @@ function CakeStore() {
             { icon: CakeSlice, top: "Baked fresh", bottom: "after you order" },
             { icon: Truck, top: "Same-day", bottom: "delivery available" },
             { icon: ShieldCheck, top: "Quality checked", bottom: "every single time" },
-          ].map(({ icon: Icon, top, bottom }) => (
+          ].map(({ icon: Icon, top, bottom }, index) => (
             <div key={top} className="flex items-center gap-3 px-3 py-2 sm:justify-center">
               <Icon size={21} className="shrink-0 text-primary" />
               <span>
-                <strong className="block text-sm">{top}</strong>
-                <span className="text-xs text-muted-foreground">{bottom}</span>
+                <EditableText id={`home.trust.${index}.top`} as="strong" className="block text-sm">
+                  {top}
+                </EditableText>
+                <EditableText id={`home.trust.${index}.bottom`} className="text-xs text-muted-foreground">
+                  {bottom}
+                </EditableText>
               </span>
             </div>
           ))}
         </div>
 
         <section className="pb-6 pt-9">
-          <h2 className="font-display text-3xl">A flavour for every craving</h2>
+          <EditableText id="home.flavours.title" as="h2" className="font-display text-3xl">
+            A flavour for every craving
+          </EditableText>
           <div className="relative mt-5">
             <div
               ref={flavourScrollRef}
@@ -371,7 +383,9 @@ function CakeStore() {
         </section>
 
         <section className="border-t border-border py-9">
-          <h2 className="font-display text-3xl">Cakes for every celebration</h2>
+          <EditableText id="home.celebrations.title" as="h2" className="font-display text-3xl">
+            Cakes for every celebration
+          </EditableText>
           <div className="relative mt-5">
             <div
               ref={celebrationScrollRef}
@@ -384,29 +398,47 @@ function CakeStore() {
                   params={{ categorySlug: occasion.category }}
                   className="group relative aspect-[2.15/1] w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-[#f6e9da] shadow-sm sm:w-[380px]"
                 >
-                  {/* The photo, blurred, fills the whole tile as a backdrop in its own colours… */}
-                  <img
-                    src={resizedImageUrl(occasion.image, 48, 40)}
-                    alt=""
-                    aria-hidden="true"
-                    loading="lazy"
-                    className="absolute inset-0 h-full w-full scale-125 object-cover blur-2xl"
-                  />
-                  <span aria-hidden="true" className="absolute inset-0 bg-white/45" />
-                  {/* …and the sharp photo sits on the right, fading into it, so the cake isn't under the text. */}
-                  <img
-                    src={resizedImageUrl(occasion.image, 480)}
-                    alt=""
-                    loading="lazy"
-                    className="absolute inset-y-0 right-0 h-full w-[62%] object-cover object-[center_60%] transition duration-500 [mask-image:linear-gradient(to_right,transparent,black_35%)] group-hover:scale-105"
-                  />
+                  <EditableImage
+                    id={`home.celebrations.${occasion.category}.image`}
+                    fallback={occasion.image}
+                    buttonPosition="right-2 top-2"
+                  >
+                    {(image) => (
+                      <>
+                        {/* The photo, blurred, fills the whole tile as a backdrop in its own colours… */}
+                        <img
+                          src={resizedImageUrl(image, 48, 40)}
+                          alt=""
+                          aria-hidden="true"
+                          loading="lazy"
+                          className="absolute inset-0 h-full w-full scale-125 object-cover blur-2xl"
+                        />
+                        <span aria-hidden="true" className="absolute inset-0 bg-white/45" />
+                        {/* …and the sharp photo sits on the right, fading into it, so the cake isn't under the text. */}
+                        <img
+                          src={resizedImageUrl(image, 480)}
+                          alt=""
+                          loading="lazy"
+                          className="absolute inset-y-0 right-0 h-full w-[62%] object-cover object-[center_60%] transition duration-500 [mask-image:linear-gradient(to_right,transparent,black_35%)] group-hover:scale-105"
+                        />
+                      </>
+                    )}
+                  </EditableImage>
                   <div className="relative z-10 flex h-full max-w-[56%] flex-col p-4 sm:p-5">
-                    <h3 className="text-lg font-extrabold leading-tight text-primary sm:text-xl">
+                    <EditableText
+                      id={`home.celebrations.${occasion.category}.label`}
+                      as="h3"
+                      className="text-lg font-extrabold leading-tight text-primary sm:text-xl"
+                    >
                       {occasion.label}
-                    </h3>
-                    <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-foreground/75 sm:text-xs">
+                    </EditableText>
+                    <EditableText
+                      id={`home.celebrations.${occasion.category}.description`}
+                      as="p"
+                      className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-foreground/75 sm:text-xs"
+                    >
                       {occasion.description}
-                    </p>
+                    </EditableText>
                     <span className="mt-auto inline-flex w-fit items-center gap-0.5 rounded-md bg-background px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm">
                       Order Now
                       <ChevronRight size={12} />
@@ -435,7 +467,9 @@ function CakeStore() {
         </section>
 
         <section className="border-t border-border py-9">
-          <h2 className="font-display text-3xl">The Celebration Collection</h2>
+          <EditableText id="home.collection.title" as="h2" className="font-display text-3xl">
+            The Celebration Collection
+          </EditableText>
           <div className="relative mt-5">
             <div
               ref={collectionScrollRef}
@@ -448,20 +482,27 @@ function CakeStore() {
                   params={{ slug: item.slug }}
                   className="group relative w-[42vw] max-w-[220px] shrink-0 snap-start sm:w-[200px] lg:w-[210px]"
                 >
-                  <span className="block aspect-[3/5] overflow-hidden rounded-md bg-muted shadow-sm">
-                    <img
-                      src={item.image}
-                      alt={item.label}
-                      width={480}
-                      height={800}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
+                  <span className="relative block aspect-[3/5] overflow-hidden rounded-md bg-muted shadow-sm">
+                    <EditableImage id={`home.collection.${item.slug}.image`} fallback={item.image}>
+                      {(image) => (
+                        <img
+                          src={resizedImageUrl(image, 480)}
+                          alt={item.label}
+                          width={480}
+                          height={800}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        />
+                      )}
+                    </EditableImage>
                   </span>
                   {/* Gradient label pill overlapping the bottom edge of the photo. */}
-                  <span className="absolute inset-x-3 -bottom-3 rounded-lg bg-gradient-to-r from-[#f0566f] to-[#9b5cf6] px-2 py-2 text-center text-xs font-semibold text-white shadow-md sm:text-sm">
+                  <EditableText
+                    id={`home.collection.${item.slug}.label`}
+                    className="absolute inset-x-3 -bottom-3 rounded-lg bg-gradient-to-r from-[#f0566f] to-[#9b5cf6] px-2 py-2 text-center text-xs font-semibold text-white shadow-md sm:text-sm"
+                  >
                     {item.label}
-                  </span>
+                  </EditableText>
                 </Link>
               ))}
             </div>
@@ -486,10 +527,12 @@ function CakeStore() {
 
         {sweetTreats.length > 0 && (
           <section className="border-t border-border py-9">
-            <h2 className="font-display text-3xl">Sweet Treats &amp; More</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <EditableText id="home.sweets.title" as="h2" className="font-display text-3xl">
+              Sweet Treats & More
+            </EditableText>
+            <EditableText id="home.sweets.intro" as="p" className="mt-1 text-sm text-muted-foreground">
               Brownies, cookies, creamy desserts and donuts — little indulgences, big happiness.
-            </p>
+            </EditableText>
             <div className="relative mt-5">
               <div
                 ref={sweetsScrollRef}
@@ -539,10 +582,12 @@ function CakeStore() {
 
         {characterTabCakes.length > 0 && (
           <section id="shop" className="scroll-mt-24 border-t border-border py-10">
-            <h2 className="font-display text-3xl">Character Cake</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <EditableText id="home.characters.title" as="h2" className="font-display text-3xl">
+              Character Cake
+            </EditableText>
+            <EditableText id="home.characters.intro" as="p" className="mt-1 text-sm text-muted-foreground">
               Pick a favourite character to see their cakes.
-            </p>
+            </EditableText>
 
             <CakeTabsRail
               cakes={characterTabCakes}

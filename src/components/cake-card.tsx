@@ -4,6 +4,7 @@ import { PriceTag } from "@/components/price-tag";
 import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { onProductImageError } from "@/lib/image-fallback";
 import { responsiveImage } from "@/lib/supabase";
+import { AdminShortcut } from "@/components/editable";
 
 export function CakeCard({
   href,
@@ -87,6 +88,11 @@ export function CakeCard({
             </span>
           )
         )}
+        <AdminShortcut
+          label="Edit cake"
+          search={{ tab: "products", q: title }}
+          className="absolute bottom-2 right-2"
+        />
       </div>
       <div className="p-3">
         {/* One line; long names end in "…" (full name in the tooltip). */}

@@ -4,6 +4,7 @@ import { LoopingRail } from "@/components/looping-rail";
 import { useStoreSettings, withSitewideDiscount } from "@/lib/store-settings";
 import { onProductImageError } from "@/lib/image-fallback";
 import { responsiveImage } from "@/lib/supabase";
+import { AdminShortcut } from "@/components/editable";
 
 export type TabbedCake = {
   id: string;
@@ -72,6 +73,13 @@ function RailCard({ cake, duplicate = false }: { cake: TabbedCake; duplicate?: b
           <span className="absolute inset-x-0 bottom-0 bg-foreground/80 py-1 text-center text-[11px] font-semibold text-background">
             Currently unavailable
           </span>
+        )}
+        {!duplicate && (
+          <AdminShortcut
+            label="Edit cake"
+            search={{ tab: "products", q: cake.title }}
+            className="absolute bottom-2 right-2"
+          />
         )}
       </div>
       <div className="px-3 pb-3 pt-2.5">
