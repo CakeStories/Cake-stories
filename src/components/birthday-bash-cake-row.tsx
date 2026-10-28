@@ -29,15 +29,10 @@ export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
     cake.sizes.length > 0 ? size : undefined,
   );
 
-  // This one cake's photo already fits a plain square nicely — stretching it
-  // like the others letterboxes it the other way round, so it keeps the
-  // original square/contain treatment instead.
-  const keepSquareImage = cake.slug === "blue-purple-character-bash";
-
   return (
     <article className="grid grid-cols-1 items-stretch gap-6 border-b border-border pb-10 last:border-b-0 sm:grid-cols-2 sm:gap-10">
       <div
-        className={`relative overflow-hidden rounded-lg bg-muted ${keepSquareImage ? "" : "sm:h-full"}`}
+        className="relative overflow-hidden rounded-lg bg-muted sm:h-full"
       >
         <EditableImage
           fallback={cake.image}
@@ -51,7 +46,7 @@ export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
               onError={onProductImageError}
               // In-flow square on phones (iOS Safari collapses an aspect-ratio box that only
               // holds an absolutely positioned image); stretched to the text column on wider screens.
-              className={`block aspect-square w-full object-contain ${keepSquareImage ? "" : "sm:absolute sm:inset-0 sm:aspect-auto sm:h-full"}`}
+              className="block aspect-square w-full object-contain sm:absolute sm:inset-0 sm:aspect-auto sm:h-full"
             />
           )}
         </EditableImage>
