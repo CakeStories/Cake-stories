@@ -8,6 +8,28 @@
 @import "@fontsource/poppins/700.css";
 @import "@fontsource/poppins/800.css";
 
+/*
+ * The rupee sign (₹) only, from Noto Sans: Poppins draws its own stylised ₹.
+ * unicode-range keeps every other character in Poppins, and the file is
+ * downloaded only on pages that actually show a ₹.
+ */
+@font-face {
+  font-family: "Rupee";
+  font-style: normal;
+  font-weight: 100 550;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/noto-sans/files/noto-sans-latin-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+20B9;
+}
+@font-face {
+  font-family: "Rupee";
+  font-style: normal;
+  font-weight: 551 900;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/noto-sans/files/noto-sans-latin-ext-700-normal.woff2") format("woff2");
+  unicode-range: U+20B9;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -25,8 +47,8 @@
  */
 
 @theme inline {
-  --font-sans: "Poppins", sans-serif;
-  --font-display: "Poppins", sans-serif;
+  --font-sans: "Rupee", "Poppins", sans-serif;
+  --font-display: "Rupee", "Poppins", sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
