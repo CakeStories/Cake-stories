@@ -17,7 +17,7 @@ import { useEditMode, useSiteText } from "@/lib/edit-mode";
 export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
   const [flavour, setFlavour] = useState<string | undefined>(undefined);
   const [size, setSize] = useState<string | undefined>(undefined);
-  const { saveProduct } = useEditMode();
+  const { saveProduct, editing } = useEditMode();
   const save = (field: "name" | "description" | "badge") => (value: string) => saveProduct(cake.id, { [field]: value });
   // Dropdown first lines can't hold editable text, so they're edited with a ✎ beside the label.
   const chooseFlavour = useSiteText("bash.chooseFlavour", "Choose a flavour");
@@ -67,9 +67,11 @@ export function BirthdayBashCakeRow({ cake }: { cake: GenericCake }) {
           Enquire for price
         </EditableText>
 
-        <EditableText as="p" multiline className="mt-3 block text-sm leading-6 text-foreground/80" onSave={save("description")}>
-          {cake.description ?? ""}
-        </EditableText>
+        {(cake.description || editing) && (
+          <EditableText as="p" multiline className="mt-3 block text-sm leading-6 text-foreground/80" onSave={save("description")}>
+            {cake.description ?? ""}
+          </EditableText>
+        )}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {cake.flavours.length > 0 && (

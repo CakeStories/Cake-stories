@@ -77,7 +77,7 @@ export function CakePurchasePanel({
   /** The catalogue product: lets the website editor change its name, description and badge here. */
   productId?: string;
 }) {
-  const { saveProduct } = useEditMode();
+  const { saveProduct, editing } = useEditMode();
   const saveField = productId
     ? (field: "name" | "description" | "badge") => (value: string) => saveProduct(productId, { [field]: value })
     : null;
@@ -219,24 +219,23 @@ export function CakePurchasePanel({
         {title}
       </EditableText>
 
-      <div className="mt-3">
-        {enquiryMode ? (
-          <EditableText id="panel.enquiryIntro" as="p" className="block text-sm text-muted-foreground">
-            Customise it your way — choose your flavour and size, then enquire on WhatsApp for the price, toppings and decorations.
-          </EditableText>
-        ) : price !== undefined ? (
-          <span className="flex items-center gap-2">
-            <PriceTag price={price} mrp={effective?.mrp ?? null} size="lg" />
-            <AdminShortcut label="Change prices" search={{ tab: "products", q: title }} />
-          </span>
-        ) : (
-          <EditableText id="panel.selectOptions" as="strong" className="text-2xl">
-            Select options
-          </EditableText>
-        )}
-      </div>
+      {/* Customisable cakes have no price line at all — the WhatsApp button covers it. */}
+      {!enquiryMode && (
+        <div className="mt-3">
+          {price !== undefined ? (
+            <span className="flex items-center gap-2">
+              <PriceTag price={price} mrp={effective?.mrp ?? null} size="lg" />
+              <AdminShortcut label="Change prices" search={{ tab: "products", q: title }} />
+            </span>
+          ) : (
+            <EditableText id="panel.selectOptions" as="strong" className="text-2xl">
+              Select options
+            </EditableText>
+          )}
+        </div>
+      )}
 
-      {(description || saveField) && (
+      {(description || (editing && saveField)) && (
         <EditableText
           as="p"
           multiline
