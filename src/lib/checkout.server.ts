@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { customerSafe, rateLimit } from "@/lib/public-guard.server";
 import { getProduct } from "@/lib/catalog";
 import { isEnquiryCategoryId } from "@/lib/enquiry";
 import {
@@ -191,7 +192,8 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
     if (ref.type === "variant") {
       const variant = variantById.get(ref.variantId);
       // A ₹0 price means "price on request" — never sellable through checkout.
-      if (!variant?.active || !variant.products?.active || !(Number(variant.price) > 0)) return null;
+      if (!variant?.active || !variant.products?.active || !(Number(variant.price) > 0))
+        return null;
       // Customisable cakes are ordered over WhatsApp, never through checkout.
       if (isEnquiryCategoryId(variant.products.category_id)) return null;
       return {
@@ -227,7 +229,9 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
 
   const gst = gstFor(
     lines.flatMap((line, i) =>
-      line ? [{ amount: line.unitPrice * cart.items[i]!.quantity, gstPercent: line.gstPercent }] : [],
+      line
+        ? [{ amount: line.unitPrice * cart.items[i]!.quantity, gstPercent: line.gstPercent }]
+        : [],
     ),
     discount,
   );
@@ -253,20 +257,23 @@ async function priceCart(cart: CartInput): Promise<PricedCart> {
 /** Live price check for the checkout page: current prices, coupon result and totals. */
 export const quoteCheckout = createServerFn({ method: "POST" })
   .validator((data: unknown) => cartSchema.parse(data))
-  .handler(async ({ data }) => {
-    const priced = await priceCart(data);
-    return {
-      unitPrices: priced.lines.map((line) => line?.unitPrice ?? null),
-      subtotal: priced.subtotal,
-      coupon: priced.coupon,
-      discount: priced.discount,
-      gst: priced.gst,
-      deliveryFee: priced.deliveryFee,
-      total: priced.total,
-      needsAdvanceNotice: priced.needsAdvanceNotice,
-      hasCake: priced.hasCake,
-    };
-  });
+  .handler(async ({ data }) =>
+    customerSafe(async () => {
+      await rateLimit("quote", 60, 60_000);
+      const priced = await priceCart(data);
+      return {
+        unitPrices: priced.lines.map((line) => line?.unitPrice ?? null),
+        subtotal: priced.subtotal,
+        coupon: priced.coupon,
+        discount: priced.discount,
+        gst: priced.gst,
+        deliveryFee: priced.deliveryFee,
+        total: priced.total,
+        needsAdvanceNotice: priced.needsAdvanceNotice,
+        hasCake: priced.hasCake,
+      };
+    }),
+  );
 
 const detailsSchema = z.object({
   name: z.string().trim().min(1, "Enter your name.").max(100),
@@ -349,90 +356,97 @@ function checkDetails(
  */
 export const createCheckoutOrder = createServerFn({ method: "POST" })
   .validator((data: unknown) => createOrderSchema.parse(data))
-  .handler(async ({ data }) => {
-    const priced = await priceCart(data);
-    checkDetails(data, priced.needsAdvanceNotice, priced.hasCake);
+  .handler(async ({ data }) =>
+    customerSafe(async () => {
+      await rateLimit("order", 8, 10 * 60_000);
+      const priced = await priceCart(data);
+      checkDetails(data, priced.needsAdvanceNotice, priced.hasCake);
 
-    if (priced.lines.some((line) => line === null)) {
-      throw new Error(
-        "Some items in your cart are no longer available. Remove them and try again.",
+      if (priced.lines.some((line) => line === null)) {
+        throw new Error(
+          "Some items in your cart are no longer available. Remove them and try again.",
+        );
+      }
+      if (priced.coupon.status === "invalid") throw new Error(priced.coupon.message);
+      if (priced.total < 1) throw new Error("Your order total must be at least ₹1.");
+
+      const userId = data.accessToken ? await userIdFromAccessToken(data.accessToken) : null;
+      const { details, fulfillmentType } = data;
+      const deliveryAddress =
+        fulfillmentType === "pickup"
+          ? `Store pickup — ${details.pickupBranch}`
+          : `${details.address}, ${details.city} ${details.pincode}`;
+
+      const payment = await createRazorpayOrder(
+        Math.round(priced.total * 100),
+        `cs_${Date.now()}`,
+        {
+          customer: details.name.slice(0, 250),
+          phone: details.phone,
+          fulfillment: fulfillmentType,
+          date: `${details.deliveryDate} ${details.deliveryTime}`,
+        },
       );
-    }
-    if (priced.coupon.status === "invalid") throw new Error(priced.coupon.message);
-    if (priced.total < 1) throw new Error("Your order total must be at least ₹1.");
 
-    const userId = data.accessToken ? await userIdFromAccessToken(data.accessToken) : null;
-    const { details, fulfillmentType } = data;
-    const deliveryAddress =
-      fulfillmentType === "pickup"
-        ? `Store pickup — ${details.pickupBranch}`
-        : `${details.address}, ${details.city} ${details.pincode}`;
+      const [order] = await serviceRest<Array<{ id: string }>>("orders", {
+        method: "POST",
+        body: {
+          user_id: userId,
+          customer_name: details.name,
+          customer_email: details.email,
+          customer_phone: details.phone,
+          delivery_address: deliveryAddress,
+          subtotal: priced.subtotal,
+          delivery_charge: priced.deliveryFee,
+          discount_amount: priced.discount,
+          gst_amount: priced.gst,
+          coupon_code: priced.coupon.status === "applied" ? priced.coupon.code : null,
+          total: priced.total,
+          fulfillment_type: fulfillmentType,
+          pickup_branch: fulfillmentType === "pickup" ? details.pickupBranch : null,
+          delivery_date: details.deliveryDate,
+          delivery_time: details.deliveryTime,
+          delivery_lat: fulfillmentType === "delivery" ? (details.deliveryLat ?? null) : null,
+          delivery_lng: fulfillmentType === "delivery" ? (details.deliveryLng ?? null) : null,
+          payment_status: "pending",
+          order_status: "pending",
+          razorpay_order_id: payment.razorpayOrderId,
+        },
+      });
+      if (!order?.id) throw new Error("We couldn't save your order. Please try again.");
 
-    const payment = await createRazorpayOrder(Math.round(priced.total * 100), `cs_${Date.now()}`, {
-      customer: details.name.slice(0, 250),
-      phone: details.phone,
-      fulfillment: fulfillmentType,
-      date: `${details.deliveryDate} ${details.deliveryTime}`,
-    });
+      await serviceRest("order_items", {
+        method: "POST",
+        body: data.items.map((item, i) => {
+          const line = priced.lines[i]!;
+          const note = item.note?.trim();
+          const instructions = item.instructions?.trim();
+          return {
+            order_id: order.id,
+            product_id: line.productId,
+            product_name: line.name,
+            size: line.size,
+            flavour: line.flavour,
+            quantity: item.quantity,
+            unit_price: line.unitPrice,
+            gst_rate: line.gstPercent,
+            customization:
+              note || instructions
+                ? { note: note || undefined, instructions: instructions || undefined }
+                : null,
+          };
+        }),
+      });
 
-    const [order] = await serviceRest<Array<{ id: string }>>("orders", {
-      method: "POST",
-      body: {
-        user_id: userId,
-        customer_name: details.name,
-        customer_email: details.email,
-        customer_phone: details.phone,
-        delivery_address: deliveryAddress,
-        subtotal: priced.subtotal,
-        delivery_charge: priced.deliveryFee,
-        discount_amount: priced.discount,
-        gst_amount: priced.gst,
-        coupon_code: priced.coupon.status === "applied" ? priced.coupon.code : null,
+      return {
+        razorpayOrderId: payment.razorpayOrderId,
+        amount: payment.amount,
+        currency: payment.currency,
+        keyId: payment.keyId,
         total: priced.total,
-        fulfillment_type: fulfillmentType,
-        pickup_branch: fulfillmentType === "pickup" ? details.pickupBranch : null,
-        delivery_date: details.deliveryDate,
-        delivery_time: details.deliveryTime,
-        delivery_lat: fulfillmentType === "delivery" ? (details.deliveryLat ?? null) : null,
-        delivery_lng: fulfillmentType === "delivery" ? (details.deliveryLng ?? null) : null,
-        payment_status: "pending",
-        order_status: "pending",
-        razorpay_order_id: payment.razorpayOrderId,
-      },
-    });
-    if (!order?.id) throw new Error("We couldn't save your order. Please try again.");
-
-    await serviceRest("order_items", {
-      method: "POST",
-      body: data.items.map((item, i) => {
-        const line = priced.lines[i]!;
-        const note = item.note?.trim();
-        const instructions = item.instructions?.trim();
-        return {
-          order_id: order.id,
-          product_id: line.productId,
-          product_name: line.name,
-          size: line.size,
-          flavour: line.flavour,
-          quantity: item.quantity,
-          unit_price: line.unitPrice,
-          gst_rate: line.gstPercent,
-          customization:
-            note || instructions
-              ? { note: note || undefined, instructions: instructions || undefined }
-              : null,
-        };
-      }),
-    });
-
-    return {
-      razorpayOrderId: payment.razorpayOrderId,
-      amount: payment.amount,
-      currency: payment.currency,
-      keyId: payment.keyId,
-      total: priced.total,
-    };
-  });
+      };
+    }),
+  );
 
 /** Called by the browser after Razorpay reports success; marks the saved order as paid. */
 export const confirmCheckoutPayment = createServerFn({ method: "POST" })
@@ -445,13 +459,16 @@ export const confirmCheckoutPayment = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
-    const valid = await isValidPaymentSignature(
-      data.razorpayOrderId,
-      data.paymentId,
-      data.signature,
-    );
-    if (!valid) return { ok: false as const };
-    const { orderId } = await markOrderPaid(data.razorpayOrderId, data.paymentId);
-    return { ok: true as const, orderRef: orderId.slice(0, 8).toUpperCase() };
-  });
+  .handler(async ({ data }) =>
+    customerSafe(async () => {
+      await rateLimit("confirm", 20, 10 * 60_000);
+      const valid = await isValidPaymentSignature(
+        data.razorpayOrderId,
+        data.paymentId,
+        data.signature,
+      );
+      if (!valid) return { ok: false as const };
+      const { orderId } = await markOrderPaid(data.razorpayOrderId, data.paymentId);
+      return { ok: true as const, orderRef: orderId.slice(0, 8).toUpperCase() };
+    }),
+  );

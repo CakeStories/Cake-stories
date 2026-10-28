@@ -46,6 +46,31 @@ const pageCacheMiddleware = createMiddleware().server(async ({ next, request }) 
   return result;
 });
 
+/**
+ * Standard browser protections on every response: HTTPS only (after the
+ * first visit), no framing by other sites (clickjacking), no MIME sniffing,
+ * and a referrer that doesn't leak full URLs to other sites.
+ */
+const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => {
+  const result = await next();
+  try {
+    const headers = result.response.headers;
+    headers.set("strict-transport-security", "max-age=31536000; includeSubDomains");
+    // Only this site and Lovable's editor preview may show it inside a frame.
+    headers.set(
+      "content-security-policy",
+      "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
+    );
+    headers.set("x-content-type-options", "nosniff");
+    headers.set("referrer-policy", "strict-origin-when-cross-origin");
+    // Location stays allowed: checkout's "use my location" map button needs it.
+    headers.set("permissions-policy", "camera=(), microphone=(), geolocation=(self)");
+  } catch {
+    // Immutable headers on this response — leave it as is rather than fail the request.
+  }
+  return result;
+});
+
 // Start installs this automatically when src/start.ts is absent; defining the
 // file opts out, so re-add it explicitly to keep server functions protected
 // from cross-site requests.
@@ -54,5 +79,5 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  requestMiddleware: [errorMiddleware, pageCacheMiddleware, csrfMiddleware],
+  requestMiddleware: [errorMiddleware, securityHeadersMiddleware, pageCacheMiddleware, csrfMiddleware],
 }));
