@@ -6,6 +6,11 @@ import { CAKE_DELIVERY_PINCODES, CAKE_DELIVERY_RADIUS_KM } from "@/lib/pricing";
  * checkout can prefill the customer's pincode and city from it.
  */
 
+/** Opens Google Maps directions (from wherever the customer is) to the named place. */
+function directionsTo(place: string): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place)}`;
+}
+
 export const BRANCH_LOCATIONS = [
   {
     id: "anducode",
@@ -13,7 +18,7 @@ export const BRANCH_LOCATIONS = [
     pickupBranch: "Arumanai Main Road, Anducode", // its name in checkout's pickup list
     address: "Post Office Jn, Melpuram Arumanai Road",
     phone: "+91 89030 18447",
-    mapsUrl: "https://share.google/tnwKStx0Ccg18KDul",
+    mapsUrl: directionsTo("Cake Stories, Anducode"),
   },
   {
     id: "pammam",
@@ -21,7 +26,7 @@ export const BRANCH_LOCATIONS = [
     pickupBranch: "Pammam, NH 47 Marthandam",
     address: "One Stop Supermarket Building, NH 47 Trivandrum Main Road, Marthandam",
     phone: "+91 97467 63777",
-    mapsUrl: "https://share.google/S27MxcUvVy0D80oFe",
+    mapsUrl: directionsTo("Cake Stories, Pammam, Marthandam"),
   },
   {
     id: "marthandam",
@@ -29,7 +34,7 @@ export const BRANCH_LOCATIONS = [
     pickupBranch: "North Street, Marthandam",
     address: "Near Good Shepherd School, North Street",
     phone: "+91 96330 20980",
-    mapsUrl: "https://share.google/Mm441BndGDFrD7hUE",
+    mapsUrl: directionsTo("Cake Stories, North Street, Marthandam"),
   },
 ];
 
