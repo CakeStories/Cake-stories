@@ -20,6 +20,7 @@ import { Route as BirthdayCakeSlugRouteImport } from './routes/birthday-cake.$sl
 import { Route as CategoryCategorySlugRouteImport } from './routes/category.$categorySlug'
 import { Route as CollectionSlugRouteImport } from './routes/collection.$slug'
 import { Route as FlavourFlavourSlugRouteImport } from './routes/flavour.$flavourSlug'
+import { Route as InfoPageRouteImport } from './routes/info.$page'
 import { Route as KidsCakeSlugRouteImport } from './routes/kids-cake.$slug'
 import { Route as ManageSecretRouteImport } from './routes/manage.$secret'
 import { Route as ProductProductSlugRouteImport } from './routes/product.$productSlug'
@@ -80,6 +81,11 @@ const FlavourFlavourSlugRoute = FlavourFlavourSlugRouteImport.update({
   path: '/flavour/$flavourSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InfoPageRoute = InfoPageRouteImport.update({
+  id: '/info/$page',
+  path: '/info/$page',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KidsCakeSlugRoute = KidsCakeSlugRouteImport.update({
   id: '/kids-cake/$slug',
   path: '/kids-cake/$slug',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/category/$categorySlug': typeof CategoryCategorySlugRoute
   '/collection/$slug': typeof CollectionSlugRoute
   '/flavour/$flavourSlug': typeof FlavourFlavourSlugRoute
+  '/info/$page': typeof InfoPageRoute
   '/kids-cake/$slug': typeof KidsCakeSlugRoute
   '/manage/$secret': typeof ManageSecretRoute
   '/product/$productSlug': typeof ProductProductSlugRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/category/$categorySlug': typeof CategoryCategorySlugRoute
   '/collection/$slug': typeof CollectionSlugRoute
   '/flavour/$flavourSlug': typeof FlavourFlavourSlugRoute
+  '/info/$page': typeof InfoPageRoute
   '/kids-cake/$slug': typeof KidsCakeSlugRoute
   '/manage/$secret': typeof ManageSecretRoute
   '/product/$productSlug': typeof ProductProductSlugRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/category/$categorySlug': typeof CategoryCategorySlugRoute
   '/collection/$slug': typeof CollectionSlugRoute
   '/flavour/$flavourSlug': typeof FlavourFlavourSlugRoute
+  '/info/$page': typeof InfoPageRoute
   '/kids-cake/$slug': typeof KidsCakeSlugRoute
   '/manage/$secret': typeof ManageSecretRoute
   '/product/$productSlug': typeof ProductProductSlugRoute
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/category/$categorySlug'
     | '/collection/$slug'
     | '/flavour/$flavourSlug'
+    | '/info/$page'
     | '/kids-cake/$slug'
     | '/manage/$secret'
     | '/product/$productSlug'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/category/$categorySlug'
     | '/collection/$slug'
     | '/flavour/$flavourSlug'
+    | '/info/$page'
     | '/kids-cake/$slug'
     | '/manage/$secret'
     | '/product/$productSlug'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/category/$categorySlug'
     | '/collection/$slug'
     | '/flavour/$flavourSlug'
+    | '/info/$page'
     | '/kids-cake/$slug'
     | '/manage/$secret'
     | '/product/$productSlug'
@@ -219,6 +231,7 @@ export interface RootRouteChildren {
   CategoryCategorySlugRoute: typeof CategoryCategorySlugRoute
   CollectionSlugRoute: typeof CollectionSlugRoute
   FlavourFlavourSlugRoute: typeof FlavourFlavourSlugRoute
+  InfoPageRoute: typeof InfoPageRoute
   KidsCakeSlugRoute: typeof KidsCakeSlugRoute
   ManageSecretRoute: typeof ManageSecretRoute
   ProductProductSlugRoute: typeof ProductProductSlugRoute
@@ -304,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FlavourFlavourSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/info/$page': {
+      id: '/info/$page'
+      path: '/info/$page'
+      fullPath: '/info/$page'
+      preLoaderRoute: typeof InfoPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/kids-cake/$slug': {
       id: '/kids-cake/$slug'
       path: '/kids-cake/$slug'
@@ -347,6 +367,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategoryCategorySlugRoute: CategoryCategorySlugRoute,
   CollectionSlugRoute: CollectionSlugRoute,
   FlavourFlavourSlugRoute: FlavourFlavourSlugRoute,
+  InfoPageRoute: InfoPageRoute,
   KidsCakeSlugRoute: KidsCakeSlugRoute,
   ManageSecretRoute: ManageSecretRoute,
   ProductProductSlugRoute: ProductProductSlugRoute,

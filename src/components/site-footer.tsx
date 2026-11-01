@@ -17,6 +17,7 @@ import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";
 import { subscribeToNewsletter } from "@/lib/newsletter.server";
 import { BRANCH_LOCATIONS } from "@/lib/delivery-location";
+import { INFO_PAGES } from "@/lib/info-pages";
 import { useEditMode, useSiteText } from "@/lib/edit-mode";
 import { resizedImageUrl } from "@/lib/supabase";
 import { DEFAULT_WHATSAPP_NUMBER, whatsappDigits } from "@/lib/whatsapp";
@@ -211,11 +212,18 @@ export function SiteFooter() {
               © {new Date().getFullYear()}{" "}
               <EditableText id="footer.copyright">Cake Stories. All rights reserved.</EditableText>
             </span>
-            <div className="flex flex-wrap gap-5">
-              <EditableText id="footer.promise.0">Freshly baked</EditableText>
-              <EditableText id="footer.promise.1">Secure payments</EditableText>
-              <EditableText id="footer.promise.2">Careful delivery</EditableText>
-            </div>
+            <nav aria-label="About Cake Stories" className="flex flex-wrap gap-x-5 gap-y-2">
+              {INFO_PAGES.map((page) => (
+                <Link
+                  key={page.slug}
+                  to="/info/$page"
+                  params={{ page: page.slug }}
+                  className="transition-colors hover:text-background"
+                >
+                  <EditableText id={`info.${page.slug}.title`}>{page.title}</EditableText>
+                </Link>
+              ))}
+            </nav>
           </div>
         </div>
       </footer>
