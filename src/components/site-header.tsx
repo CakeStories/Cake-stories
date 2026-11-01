@@ -274,7 +274,13 @@ function DeliveryLocationPicker({ variant }: { variant: "desktop" | "mobile" }) 
               <EditableText id="header.location.notDeliverable">Not deliverable to this location</EditableText>
             </p>
             <EditableText id="header.location.notDeliverableHelp" as="p" className="mt-1 text-foreground/80">
-              We deliver cakes within 15 km of our shops. You can still order for pickup from one of our shops below, and Party Essentials ship anywhere in India.
+              We currently deliver cakes within a 15 km radius of our stores. You can still place an order for store pickup from any of our outlets.
+            </EditableText>
+            <EditableText id="header.location.panIndia" as="p" className="mt-1.5 text-foreground/80">
+              Party Essentials, Cookies &amp; Brownies can be delivered anywhere across India.
+            </EditableText>
+            <EditableText id="header.location.help" as="p" className="mt-1.5 text-foreground/80">
+              Need assistance? Call or WhatsApp our Customer Care team at 7907518447. We're happy to help!
             </EditableText>
           </div>
         ) : (
