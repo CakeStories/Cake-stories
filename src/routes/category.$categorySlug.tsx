@@ -39,7 +39,8 @@ const NO_FILTER_SLUGS = new Set(["wedding-cakes", "kids-cakes", "holy-communion-
  * Categories that aren't open yet: until the date (shop time, YYYY-MM-DD)
  * the page shows "Coming soon" instead of its products and banners. Nothing
  * is deleted — everything set up in /manage appears automatically on the day.
- * To open early or later, change the date here.
+ * The owner changes the date (or sets one for any other category) in the
+ * website editor; these are only the starting values.
  */
 const COMING_SOON: Record<string, { opensOn: string; message: string }> = {
   "new-arrivals": {
@@ -48,9 +49,17 @@ const COMING_SOON: Record<string, { opensOn: string; message: string }> = {
   },
 };
 
-function comingSoonFor(slug: string) {
-  const entry = COMING_SOON[slug];
-  return entry && shopTodayIso() < entry.opensOn ? entry : null;
+const DEFAULT_COMING_SOON_MESSAGE = "This menu opens soon — check back shortly.";
+
+/** The opening date set in the editor (blank = open now), else the built-in one. */
+function opensOnFor(slug: string, content: Record<string, string>): string {
+  return (content[`category.${slug}.opensOn`] ?? COMING_SOON[slug]?.opensOn ?? "").trim();
+}
+
+function comingSoonFor(slug: string, content: Record<string, string>) {
+  const opensOn = opensOnFor(slug, content);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(opensOn) || shopTodayIso() >= opensOn) return null;
+  return { opensOn, message: COMING_SOON[slug]?.message ?? DEFAULT_COMING_SOON_MESSAGE };
 }
 
 export const Route = createFileRoute("/category/$categorySlug")({
@@ -92,7 +101,11 @@ export const Route = createFileRoute("/category/$categorySlug")({
 
 function CategoryPage() {
   const { category, weddingCakes, birthdayCakes, kidsCakes, characterGroups, featuredCakes, allCategories, categoryBanners } = Route.useLoaderData();
-  const comingSoon = comingSoonFor(category.slug);
+  const { content, editing, save } = useEditMode();
+  // While editing, the owner can look at (and set up) the page as it will be once open.
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const scheduled = comingSoonFor(category.slug, content);
+  const comingSoon = editing && previewOpen ? null : scheduled;
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   // Switching to another category starts with a clean slate.
   useEffect(() => setFilters(DEFAULT_FILTERS), [category.slug]);
@@ -276,6 +289,16 @@ function CategoryPage() {
           <span className="mx-1.5">/</span>
           <span className="text-foreground">{categoryName}</span>
         </nav>
+
+        {editing && !SPECIAL_CAKE_SLUGS.has(category.slug) && (
+          <OpeningDateEditor
+            opensOn={opensOnFor(category.slug, content)}
+            isClosed={!!scheduled}
+            previewOpen={previewOpen}
+            onPreviewChange={setPreviewOpen}
+            onSave={(value) => save(`category.${category.slug}.opensOn`, value)}
+          />
+        )}
 
         {comingSoon ? (
           <div className="my-16 rounded-2xl border border-border bg-primary/[0.05] px-6 py-14 text-center">
@@ -495,5 +518,61 @@ function CategoryPage() {
 
       <SiteFooter />
     </main>
+  );
+}
+
+/**
+ * Edit mode only: when this category opens to customers. Before that date the
+ * page shows "Coming soon"; on the day everything set up for it appears.
+ */
+function OpeningDateEditor({
+  opensOn,
+  isClosed,
+  previewOpen,
+  onPreviewChange,
+  onSave,
+}: {
+  opensOn: string;
+  isClosed: boolean;
+  previewOpen: boolean;
+  onPreviewChange: (open: boolean) => void;
+  onSave: (value: string) => Promise<void>;
+}) {
+  const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
+  const change = async (value: string) => {
+    setStatus("saving");
+    try {
+      await onSave(value);
+      setStatus("idle");
+    } catch {
+      setStatus("error");
+    }
+  };
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-dashed border-primary/50 bg-primary/[0.04] p-3 text-sm">
+      <label className="flex items-center gap-2">
+        <span className="font-semibold">Page opens to customers on</span>
+        <input
+          type="date"
+          value={opensOn}
+          onChange={(e) => void change(e.target.value)}
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+        />
+      </label>
+      {opensOn && (
+        <button type="button" onClick={() => void change("")} className="text-xs font-semibold text-primary underline underline-offset-2">
+          Open it now
+        </button>
+      )}
+      <span className="text-xs text-muted-foreground">
+        {status === "saving" ? "Saving…" : status === "error" ? "Couldn't save — try again." : isClosed ? "Customers see “Coming soon” until then." : "Open — customers can see this page."}
+      </span>
+      {isClosed && (
+        <label className="ml-auto flex items-center gap-2 text-xs font-semibold">
+          <input type="checkbox" checked={previewOpen} onChange={(e) => onPreviewChange(e.target.checked)} />
+          Show the page as it will look when open
+        </label>
+      )}
+    </div>
   );
 }

@@ -183,6 +183,13 @@
     min-width: 320px;
   }
 
+  /* Faint cake / party doodles behind every storefront page (each page is one <main>).
+     Cards, photos and panels keep their own solid backgrounds on top. */
+  main {
+    background-image: url("/bg-pattern.svg");
+    background-size: 420px 420px;
+  }
+
   button, input, select { font: inherit; }
   button { cursor: pointer; }
   ::selection { background: var(--color-rose-soft); }

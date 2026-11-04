@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420" fill="none" stroke="#af1b37" stroke-opacity="0.11" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Faint celebration doodles tiled behind every page. Change stroke-opacity above to make them lighter or stronger. -->
+  <defs>
+    <g id="cake">
+      <rect x="4" y="20" width="32" height="16" rx="2"/>
+      <path d="M4 27c4 3 7 3 11 0s7-3 10 0 7 3 11 0"/>
+      <rect x="9" y="12" width="22" height="8" rx="1.5"/>
+      <path d="M20 12V7"/>
+      <path d="M20 2.5c1.6 1.5 1.6 3 0 3.6-1.6-.6-1.6-2.1 0-3.6z"/>
+    </g>
+    <g id="popper">
+      <path d="M5 36l8-22 14 14z"/>
+      <path d="M9 25l7 7M11 19l10 10"/>
+      <path d="M18 9c1-3 4-4 6-3"/>
+      <path d="M30 21c3-1 5 0 6 2"/>
+      <circle cx="29" cy="8" r="1.4"/>
+      <circle cx="35" cy="14" r="1.4"/>
+      <path d="M23 3l1 3M36 6l-2 2"/>
+    </g>
+    <g id="balloon">
+      <ellipse cx="20" cy="15" rx="10" ry="12"/>
+      <path d="M18 27h4l-2 3z"/>
+      <path d="M20 30c-3 4 3 6 0 10"/>
+      <path d="M15 10c1-2 3-3 5-3"/>
+    </g>
+    <g id="gift">
+      <rect x="5" y="17" width="30" height="19" rx="1.5"/>
+      <rect x="3" y="11" width="34" height="6" rx="1"/>
+      <path d="M20 11v25"/>
+      <path d="M20 11c-3-6-10-6-9-2s6 2 9 2c3 0 8 2 9-2s-6-4-9 2"/>
+    </g>
+    <g id="cupcake">
+      <path d="M9 22h22l-3 14H12z"/>
+      <path d="M15 22l1 14M20 22v14M25 22l-1 14"/>
+      <path d="M7 22c-2-6 4-9 7-8 1-5 11-5 12 0 3-1 9 2 7 8z"/>
+      <circle cx="20" cy="7" r="2"/>
+    </g>
+    <path id="star" d="M20 8l3 7 7 .5-5.5 4.5 2 7-6.5-4-6.5 4 2-7L10 15.5l7-.5z"/>
+    <path id="heart" d="M20 32s-11-7-11-14a6 6 0 0 1 11-3 6 6 0 0 1 11 3c0 7-11 14-11 14z"/>
+  </defs>
+
+  <use href="#cake" transform="translate(30 28) rotate(-8 20 20)"/>
+  <use href="#popper" transform="translate(250 20) rotate(10 20 20)"/>
+  <use href="#balloon" transform="translate(140 120) rotate(6 20 20)"/>
+  <use href="#gift" transform="translate(330 150) rotate(-10 20 20)"/>
+  <use href="#cupcake" transform="translate(40 230) rotate(8 20 20)"/>
+  <use href="#cake" transform="translate(240 270) rotate(6 20 20)"/>
+  <use href="#balloon" transform="translate(360 340) rotate(-6 20 20)"/>
+  <use href="#popper" transform="translate(130 340) rotate(-14 20 20)"/>
+  <use href="#star" transform="translate(150 20) scale(.7)"/>
+  <use href="#heart" transform="translate(70 140) scale(.6)"/>
+  <use href="#star" transform="translate(330 80) scale(.55)"/>
+  <use href="#heart" transform="translate(240 190) scale(.55)"/>
+  <use href="#star" transform="translate(20 360) scale(.6)"/>
+  <use href="#heart" transform="translate(300 380) scale(.5)"/>
+
+  <!-- confetti -->
+  <circle cx="110" cy="70" r="2"/>
+  <circle cx="220" cy="110" r="2"/>
+  <circle cx="300" cy="250" r="2"/>
+  <circle cx="120" cy="270" r="2"/>
+  <circle cx="200" cy="400" r="2"/>
+  <circle cx="400" cy="40" r="2"/>
+  <path d="M200 60l6 3M90 200l4 5M380 240l-5 4M190 230l6-2M60 320l5 3M260 350l-4 5"/>
+</svg>
