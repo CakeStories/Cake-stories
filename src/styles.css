@@ -170,6 +170,14 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+/* Swipe rows (cake rails, tabs, the phone tab bar) scroll without a visible scrollbar. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

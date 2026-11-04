@@ -302,9 +302,10 @@ const TAB_BAR_CATEGORIES = [
   { slug: "anniversary-cakes", label: "Anniversary" },
 ];
 
+// Three buttons fill the screen; swipe sideways for the rest.
 const tabClass = (active: boolean) =>
-  `flex min-w-0 flex-col items-center justify-center gap-1 rounded-md py-1.5 text-[clamp(8px,2.2vw,10px)] font-medium leading-none tracking-[-0.03em] transition ${
-    active ? "text-primary" : "text-foreground/80 hover:text-primary"
+  `flex h-12 basis-1/3 shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-medium transition ${
+    active ? "text-primary" : "text-foreground hover:text-primary"
   }`;
 
 // Tints the black line icons brand red on the page you're on.
@@ -314,14 +315,22 @@ function MobileTabBar() {
   const { content } = useEditMode();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const whatsapp = content["contact.whatsapp"] ?? DEFAULT_WHATSAPP_NUMBER;
+  // Fade the edge that has more buttons beyond it, so it's clear the bar swipes.
+  const [edges, setEdges] = useState({ left: false, right: true });
+  const onScroll = (el: HTMLDivElement) =>
+    setEdges({ left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
 
   return (
     <nav
       aria-label="Quick links"
-      className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-7 border-t border-border bg-background px-0.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] pt-1.5 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
     >
+      <div
+        onScroll={(e) => onScroll(e.currentTarget)}
+        className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto px-3 py-2 [scroll-padding-inline:0.75rem]"
+      >
       <Link to="/" className={tabClass(pathname === "/")}>
-        <Home size={20} strokeWidth={1.8} />
+        <Home size={18} />
         <EditableText id="tabbar.home" className="max-w-full truncate">Home</EditableText>
       </Link>
       {TAB_BAR_CATEGORIES.map(({ slug, label }) => {
@@ -334,11 +343,11 @@ function MobileTabBar() {
                   <img
                     src={resizedImageUrl(icon, 48)}
                     alt=""
-                    className="h-5 w-5 object-contain"
-                    style={active ? { filter: ACTIVE_ICON_FILTER } : { opacity: 0.8 }}
+                    className="h-[18px] w-[18px] object-contain"
+                    {...(active && { style: { filter: ACTIVE_ICON_FILTER } })}
                   />
                 ) : (
-                  <CakeSlice size={20} strokeWidth={1.8} />
+                  <CakeSlice size={18} />
                 )
               }
             </EditableImage>
@@ -350,13 +359,22 @@ function MobileTabBar() {
         <WhatsAppIcon />
         <EditableText id="tabbar.whatsapp" className="max-w-full truncate">WhatsApp</EditableText>
       </a>
+      </div>
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent transition-opacity ${edges.left ? "opacity-100" : "opacity-0"}`}
+      />
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent transition-opacity ${edges.right ? "opacity-100" : "opacity-0"}`}
+      />
     </nav>
   );
 }
 
 function WhatsAppIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="#25D366">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="#25D366">
       <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.3-.4.8-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z" />
     </svg>
   );
