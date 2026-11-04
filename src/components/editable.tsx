@@ -1,8 +1,9 @@
 import { useRef, useState, type ElementType, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ImageUp, Loader2, Pencil, RotateCcw, X } from "lucide-react";
+import { ImageUp, Link2, Loader2, Pencil, RotateCcw, X } from "lucide-react";
 import { useEditMode } from "@/lib/edit-mode";
+import { groupedSitePages, sitePages } from "@/lib/site-pages";
 
 /** Stops a click from also following the link / pressing the button the editable sits in. */
 function stop(e: React.SyntheticEvent) {
@@ -252,6 +253,113 @@ export function EditableValue({
     >
       <Pencil size={11} />
     </button>
+  );
+}
+
+/**
+ * In edit mode only: a "Change link" button that picks which page a tile or
+ * banner opens — from a list of the site's pages, or any web address.
+ * Read the saved value with `useSiteText(id, fallback)`.
+ */
+export function EditableLink({
+  id,
+  fallback,
+  className = "",
+}: {
+  id: string;
+  /** The built-in destination, e.g. "/category/birthday-cakes". */
+  fallback: string;
+  className?: string;
+}) {
+  const { content, editing, save } = useEditMode();
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
+  if (!editing) return null;
+  const current = content[id] ?? fallback;
+  const pages = sitePages(undefined, content["contact.whatsapp"]);
+
+  const commit = async () => {
+    const next = value.trim();
+    setStatus("saving");
+    try {
+      await save(id, next === "" || next === fallback ? null : next);
+      setStatus("idle");
+      setOpen(false);
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={(e) => {
+          stop(e);
+          setValue(current);
+          setOpen(true);
+        }}
+        className={`z-20 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-foreground/85 px-2.5 py-1 text-[11px] font-semibold text-background shadow hover:bg-foreground ${className}`}
+      >
+        <Link2 size={11} /> Change link
+      </button>
+      {open &&
+        createPortal(
+          // React bubbles portal events up the component tree — keep clicks here from reaching the tile's link.
+          <div
+            className="fixed inset-0 z-[100] grid place-items-center bg-foreground/40 p-4"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.target === e.currentTarget) setOpen(false);
+            }}
+          >
+            <div className="w-full max-w-sm rounded-lg bg-background p-4 text-sm text-foreground shadow-xl">
+              <p className="font-semibold">Where should this open?</p>
+              <select
+                value={pages.some((p) => p.href === value) ? value : ""}
+                onChange={(e) => e.target.value && setValue(e.target.value)}
+                className="mt-3 h-10 w-full rounded-md border border-input bg-background px-2.5"
+              >
+                <option value="">Pick a page…</option>
+                {groupedSitePages(pages).map(([group, list]) => (
+                  <optgroup key={group} label={group}>
+                    {list.map((p) => (
+                      <option key={p.href} value={p.href}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <label className="mt-3 block text-xs text-muted-foreground">
+                Or any link (a page here like /category/birthday-cakes, or https://…)
+                <input
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-md border border-input bg-background px-2.5 text-sm text-foreground"
+                />
+              </label>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                {status === "error" && <span className="mr-auto text-xs text-destructive">Couldn't save — try again.</span>}
+                <button type="button" onClick={() => setOpen(false)} className="h-9 rounded-md px-3 font-semibold hover:bg-muted">
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={status === "saving"}
+                  onClick={() => void commit()}
+                  className="h-9 rounded-md bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-60"
+                >
+                  {status === "saving" ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 

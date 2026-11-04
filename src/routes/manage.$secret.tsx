@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/button";
 import { resizedImageUrl } from "@/lib/supabase";
 import { startEditMode } from "@/lib/edit-mode";
+import { groupedSitePages, sitePages } from "@/lib/site-pages";
 import {
   adminAddCategoryLink,
   adminAddVariant,
@@ -1562,6 +1563,7 @@ function BannerRow({
   const [active, setActive] = useState(banner.active);
   const [categoryId, setCategoryId] = useState(banner.category_id ?? "");
   const [position, setPosition] = useState<"top" | "bottom">(banner.position);
+  const pages = useMemo(() => sitePages(categories), [categories]);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -1659,6 +1661,22 @@ function BannerRow({
               <span className="mb-1 block font-medium text-muted-foreground">
                 Links to when tapped
               </span>
+              <select
+                value={pages.some((p) => p.href === linkUrl) ? linkUrl : ""}
+                onChange={(e) => e.target.value && setLinkUrl(e.target.value)}
+                className="mb-1.5 h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Pick a page… (or type a link below)</option>
+                {groupedSitePages(pages).map(([group, list]) => (
+                  <optgroup key={group} label={group}>
+                    {list.map((p) => (
+                      <option key={p.href} value={p.href}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
               <input
                 value={linkUrl}
                 placeholder="/category/birthday-cakes or https://wa.me/91..."

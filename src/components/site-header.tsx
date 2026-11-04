@@ -33,25 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
 import { EditableImage, EditableText, EditableValue } from "@/components/editable";
 import { useEditMode, useSiteText } from "@/lib/edit-mode";
 import { resizedImageUrl } from "@/lib/supabase";
-import iconBirthdayCakes from "@/assets/category-icon-birthday-cakes.png";
-import iconWeddingCakes from "@/assets/category-icon-wedding-cakes.png";
-import iconKidsCakes from "@/assets/category-icon-kids-cakes.png";
-import iconHolyCommunion from "@/assets/category-icon-holy-communion.png";
-import iconBirthdayBash from "@/assets/category-icon-birthday-bash.png";
-import iconPartyEssentials from "@/assets/category-icon-party-essentials.png";
-import iconNewArrivals from "@/assets/category-icon-new-arrivals.png";
-
-// Per-category nav icons — anything not in this list (a category the shop
-// owner adds themselves from /manage) falls back to the generic CakeSlice icon.
-const CATEGORY_ICONS: Record<string, string> = {
-  "birthday-cakes": iconBirthdayCakes,
-  "wedding-cakes": iconWeddingCakes,
-  "kids-cakes": iconKidsCakes,
-  "holy-communion-cakes": iconHolyCommunion,
-  "birthday-bash": iconBirthdayBash,
-  "party-essentials": iconPartyEssentials,
-  "new-arrivals": iconNewArrivals,
-};
+import { CATEGORY_ICONS } from "@/lib/category-icons";
 
 // The panel shown under the search box before the customer has typed
 // anything — their recent searches plus every category/flavour they can
@@ -532,7 +514,7 @@ export function SiteHeader({
             <Button
               variant="ghost"
               size="icon"
-              className="relative hidden sm:inline-flex"
+              className="relative"
               aria-label={`Wishlist with ${wishlistCount} items`}
               asChild
             >

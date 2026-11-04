@@ -16,7 +16,7 @@ import bannerClassics from "@/assets/cake-stories-classics.jpg";
 import bannerDesigner from "@/assets/cake-stories-designer.jpg";
 import bannerCustomize from "@/assets/cake-stories-customize.jpg";
 import { resizedImageUrl, responsiveImage } from "@/lib/supabase";
-import { AdminShortcut, EditableImage, EditableText } from "@/components/editable";
+import { AdminShortcut, EditableImage, EditableText, EditableLink } from "@/components/editable";
 import { useEditMode } from "@/lib/edit-mode";
 
 export const Route = createFileRoute("/")({
@@ -215,7 +215,7 @@ const fallbackBanners: {
 
 function CakeStore() {
   const { dbBanners } = Route.useLoaderData();
-  const { saveProduct } = useEditMode();
+  const { saveProduct, content } = useEditMode();
   const flavourScrollRef = useRef<HTMLDivElement>(null);
   const celebrationScrollRef = useRef<HTMLDivElement>(null);
   const collectionScrollRef = useRef<HTMLDivElement>(null);
@@ -417,13 +417,14 @@ function CakeStore() {
               ref={celebrationScrollRef}
               className="scrollbar-none flex snap-x gap-4 overflow-x-auto pb-3"
             >
-              {celebrations.map((occasion) => (
-                <Link
-                  key={occasion.label}
-                  to="/category/$categorySlug"
-                  params={{ categorySlug: occasion.category }}
-                  className="group relative aspect-[2.15/1] w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-[#f6e9da] shadow-sm sm:w-[380px]"
-                >
+              {celebrations.map((occasion) => {
+                // Where the tile opens is chosen in the website editor ("Change link").
+                const linkId = `home.celebrations.${occasion.category}.link`;
+                const href = content[linkId] ?? `/category/${occasion.category}`;
+                const tileClass =
+                  "group relative block aspect-[2.15/1] w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-[#f6e9da] shadow-sm sm:w-[380px]";
+                const tile = (
+                <>
                   <EditableImage
                     id={`home.celebrations.${occasion.category}.image`}
                     fallback={occasion.image}
@@ -466,12 +467,23 @@ function CakeStore() {
                       {occasion.description}
                     </EditableText>
                     <span className="mt-auto inline-flex w-fit items-center gap-0.5 rounded-md bg-background px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm">
-                      Order Now
+                      <EditableText id="home.celebrations.orderNow">Order Now</EditableText>
                       <ChevronRight size={12} />
                     </span>
                   </div>
-                </Link>
-              ))}
+                  <EditableLink id={linkId} fallback={`/category/${occasion.category}`} className="absolute bottom-2 right-2" />
+                </>
+                );
+                return /^https?:\/\//i.test(href) ? (
+                  <a key={occasion.label} href={href} target="_blank" rel="noopener noreferrer" className={tileClass}>
+                    {tile}
+                  </a>
+                ) : (
+                  <Link key={occasion.label} to={href} className={tileClass}>
+                    {tile}
+                  </Link>
+                );
+              })}
             </div>
             <button
               type="button"

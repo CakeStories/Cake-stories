@@ -3,21 +3,19 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Clock,
   Facebook,
-  Heart,
+  Home,
   Instagram,
   Mail,
   MapPin,
   Phone,
-  ShoppingBag,
-  SlidersHorizontal,
+  CakeSlice,
 } from "lucide-react";
 import { Button } from "@/components/button";
 import { EditableImage, EditableText, EditableValue } from "@/components/editable";
-import { useCart } from "@/lib/cart";
-import { useWishlist } from "@/lib/wishlist";
 import { subscribeToNewsletter } from "@/lib/newsletter.server";
 import { BRANCH_LOCATIONS } from "@/lib/delivery-location";
 import { INFO_PAGES } from "@/lib/info-pages";
+import { CATEGORY_ICONS } from "@/lib/category-icons";
 import { useEditMode, useSiteText } from "@/lib/edit-mode";
 import { resizedImageUrl } from "@/lib/supabase";
 import { DEFAULT_WHATSAPP_NUMBER, whatsappDigits } from "@/lib/whatsapp";
@@ -293,44 +291,73 @@ function NewsletterForm() {
   );
 }
 
-function MobileTabBar() {
-  const { itemCount } = useCart();
-  const { count: wishlistCount } = useWishlist();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+// The phone tab bar: home, the main cake categories, and a WhatsApp chat.
+// (Wishlist and bag sit in the header, top right.) Names and icons can be
+// changed in the website editor.
+const TAB_BAR_CATEGORIES = [
+  { slug: "birthday-cakes", label: "Birthday" },
+  { slug: "wedding-cakes", label: "Wedding" },
+  { slug: "kids-cakes", label: "Kids" },
+  { slug: "holy-communion-cakes", label: "Communion" },
+  { slug: "anniversary-cakes", label: "Anniversary" },
+];
 
-  // "Filter & sort" only makes sense where there's a product list to filter —
-  // the homepage's shop section, or a category listing. On a single-product
-  // page (cart, wishlist, a cake's own page) there's nothing to jump to, so
-  // we point it at the nearest place that does have sort/filter controls
-  // instead of always bouncing to the homepage.
-  const isCategoryPage = pathname.startsWith("/category/");
-  const filterSortHref = isCategoryPage ? pathname : "/";
-  const filterSortHash = isCategoryPage ? "sort" : "shop";
+const tabClass = (active: boolean) =>
+  `flex min-w-0 flex-col items-center justify-center gap-1 rounded-md py-1.5 text-[clamp(8px,2.2vw,10px)] font-medium leading-none tracking-[-0.03em] transition ${
+    active ? "text-primary" : "text-foreground/80 hover:text-primary"
+  }`;
+
+// Tints the black line icons brand red on the page you're on.
+const ACTIVE_ICON_FILTER = "invert(15%) sepia(80%) saturate(4000%) hue-rotate(335deg) brightness(85%)";
+
+function MobileTabBar() {
+  const { content } = useEditMode();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const whatsapp = content["contact.whatsapp"] ?? DEFAULT_WHATSAPP_NUMBER;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-3 border-t border-border bg-background px-3 py-2 md:hidden">
-      <Button variant="ghost" className="h-12 flex-col gap-1 text-[10px]" asChild>
-        <Link to="/wishlist">
-          <Heart size={18} />
-          <span>
-            <EditableText id="tabbar.wishlist">Wishlist</EditableText> {wishlistCount > 0 && `(${wishlistCount})`}
-          </span>
-        </Link>
-      </Button>
-      <Button variant="ghost" className="h-12 flex-col gap-1 text-[10px]" asChild>
-        <Link to={filterSortHref} hash={filterSortHash}>
-          <SlidersHorizontal size={18} />
-          <EditableText id="tabbar.filter">Filter & sort</EditableText>
-        </Link>
-      </Button>
-      <Button variant="ghost" className="relative h-12 flex-col gap-1 text-[10px]" asChild>
-        <Link to="/cart">
-          <ShoppingBag size={18} />
-          <span>
-            <EditableText id="tabbar.bag">Bag</EditableText> {itemCount > 0 && `(${itemCount})`}
-          </span>
-        </Link>
-      </Button>
-    </div>
+    <nav
+      aria-label="Quick links"
+      className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-7 border-t border-border bg-background px-0.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] pt-1.5 md:hidden"
+    >
+      <Link to="/" className={tabClass(pathname === "/")}>
+        <Home size={20} strokeWidth={1.8} />
+        <EditableText id="tabbar.home" className="max-w-full truncate">Home</EditableText>
+      </Link>
+      {TAB_BAR_CATEGORIES.map(({ slug, label }) => {
+        const active = pathname === `/category/${slug}`;
+        return (
+          <Link key={slug} to="/category/$categorySlug" params={{ categorySlug: slug }} className={tabClass(active)}>
+            <EditableImage id={`nav.icon.${slug}`} fallback={CATEGORY_ICONS[slug] ?? ""} buttonPosition="-right-3 -top-3" compact>
+              {(icon) =>
+                icon ? (
+                  <img
+                    src={resizedImageUrl(icon, 48)}
+                    alt=""
+                    className="h-5 w-5 object-contain"
+                    style={active ? { filter: ACTIVE_ICON_FILTER } : { opacity: 0.8 }}
+                  />
+                ) : (
+                  <CakeSlice size={20} strokeWidth={1.8} />
+                )
+              }
+            </EditableImage>
+            <EditableText id={`tabbar.${slug}`} className="max-w-full truncate">{label}</EditableText>
+          </Link>
+        );
+      })}
+      <a href={`https://wa.me/${whatsappDigits(whatsapp)}`} target="_blank" rel="noopener noreferrer" className={tabClass(false)}>
+        <WhatsAppIcon />
+        <EditableText id="tabbar.whatsapp" className="max-w-full truncate">WhatsApp</EditableText>
+      </a>
+    </nav>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="#25D366">
+      <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.3-.4.8-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z" />
+    </svg>
   );
 }
