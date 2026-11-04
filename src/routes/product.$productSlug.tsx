@@ -100,7 +100,7 @@ function ProductPage() {
       }));
 
   return (
-    <main className="min-h-screen bg-background pb-20 md:pb-0">
+    <main className="min-h-screen bg-background">
       <SiteHeader activeCategory={categorySlug} />
 
       <div className="mx-auto max-w-7xl px-4 lg:px-6">

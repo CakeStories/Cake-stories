@@ -168,7 +168,7 @@ export function CategoryFilterBar({
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            className={`flex h-10 items-center gap-2 rounded-md border px-3.5 text-sm font-semibold transition ${
+            className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-md border px-3.5 text-sm font-semibold transition sm:flex-none ${
               open || hasFilters ? "border-primary text-primary" : "border-input hover:border-primary/50"
             }`}
           >
@@ -182,7 +182,7 @@ export function CategoryFilterBar({
           </button>
         )}
 
-        <label className="relative">
+        <label className="relative flex-1 sm:flex-none">
           <span className="sr-only">Sort cakes</span>
           <ArrowDownAZ
             size={16}
@@ -191,7 +191,7 @@ export function CategoryFilterBar({
           <select
             value={state.sort}
             onChange={(e) => onChange({ ...state, sort: e.target.value as SortOption })}
-            className="h-10 appearance-none rounded-md border border-input bg-background pl-9 pr-9 text-sm font-semibold outline-none focus:ring-2 focus:ring-ring"
+            className="h-10 w-full appearance-none rounded-md border border-input bg-background pl-9 pr-9 text-sm font-semibold outline-none focus:ring-2 focus:ring-ring"
           >
             {SORT_OPTIONS.filter((o) => !hidePriceSort || !o.startsWith("Price")).map((option) => (
               <option key={option} value={option}>

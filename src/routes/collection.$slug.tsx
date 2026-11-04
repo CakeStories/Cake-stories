@@ -43,7 +43,7 @@ function CollectionPage() {
   const { collection, cakes } = Route.useLoaderData();
 
   return (
-    <main className="min-h-screen bg-background pb-20 md:pb-0">
+    <main className="min-h-screen bg-background">
       <SiteHeader />
       <div className="mx-auto max-w-7xl px-4 lg:px-6">
         <nav className="py-4 text-xs text-muted-foreground" aria-label="Breadcrumb">

@@ -19,7 +19,7 @@ function WishlistPage() {
   const { items, remove } = useWishlist();
 
   return (
-    <main className="min-h-screen bg-background pb-24 md:pb-0">
+    <main className="min-h-screen bg-background">
       <SiteHeader hideCategories />
 
       <div className="mx-auto max-w-5xl px-4 py-8 lg:px-6">

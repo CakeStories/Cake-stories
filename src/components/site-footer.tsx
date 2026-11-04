@@ -60,7 +60,8 @@ export function SiteFooter() {
         </div>
       </section>
 
-      <footer className="bg-foreground py-12 text-background">
+      {/* The extra bottom space on phones sits under the fixed tab bar, so the dark footer runs to the screen edge. */}
+      <footer className="bg-foreground pb-28 pt-12 text-background md:pb-12">
         <div className="mx-auto max-w-7xl px-4 lg:px-6">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div>

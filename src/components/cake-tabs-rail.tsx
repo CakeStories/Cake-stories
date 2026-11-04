@@ -200,7 +200,7 @@ export function CakeTabsRail({
               role="tab"
               aria-selected={active}
               onClick={() => setActiveTab(group.label)}
-              className={`flex min-w-[150px] flex-1 shrink-0 items-center justify-center gap-2.5 whitespace-nowrap px-4 py-4 text-sm transition sm:text-[15px] ${
+              className={`flex min-w-[150px] flex-auto shrink-0 items-center justify-center gap-2.5 whitespace-nowrap px-4 py-4 text-sm transition sm:text-[15px] ${
                 active
                   ? "rounded-t-xl border-t-[3px] border-foreground bg-primary/[0.07] font-semibold text-foreground"
                   : "bg-background font-bold text-foreground/90 hover:bg-primary/[0.03]"

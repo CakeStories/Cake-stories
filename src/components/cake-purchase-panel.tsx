@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   Clock3,
@@ -104,6 +104,9 @@ export function CakePurchasePanel({
   const [note, setNote] = useState("");
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [added, setAdded] = useState(false);
+  // Known only in the browser; set after the first render so the server and browser HTML match.
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
 
   const rawVariant = getPrice(flavours.length > 0 ? flavour : undefined, size);
   const effective = rawVariant
@@ -474,7 +477,7 @@ export function CakePurchasePanel({
               {
                 cakeMessage: note,
                 notes: specialInstructions,
-                ...(typeof window !== "undefined" && { url: `${window.location.origin}${basePath}/${slug}` }),
+                ...(origin && { url: `${origin}${basePath}/${slug}` }),
               },
             )}
             target="_blank"

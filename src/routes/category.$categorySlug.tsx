@@ -257,7 +257,7 @@ function CategoryPage() {
   );
 
   return (
-    <main className="min-h-screen bg-background pb-20 md:pb-0">
+    <main className="min-h-screen bg-background">
       <SiteHeader activeCategory={category.slug} />
 
       {category.bannerText && (

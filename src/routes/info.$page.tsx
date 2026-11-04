@@ -26,7 +26,7 @@ function InfoPageView() {
   const key = `info.${page.slug}`;
 
   return (
-    <main className="min-h-screen bg-background pb-24 md:pb-0">
+    <main className="min-h-screen bg-background">
       <SiteHeader hideCategories />
 
       <article className="mx-auto max-w-3xl px-4 py-10 lg:px-6">
