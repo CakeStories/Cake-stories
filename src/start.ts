@@ -56,11 +56,8 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
   try {
     const headers = result.response.headers;
     headers.set("strict-transport-security", "max-age=31536000; includeSubDomains");
-    // Only this site and Lovable's editor preview may show it inside a frame.
-    headers.set(
-      "content-security-policy",
-      "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
-    );
+    // Only this site itself may show it inside a frame.
+    headers.set("content-security-policy", "frame-ancestors 'self'");
     headers.set("x-content-type-options", "nosniff");
     headers.set("referrer-policy", "strict-origin-when-cross-origin");
     // Location stays allowed: checkout's "use my location" map button needs it.

@@ -1,2 +1,2 @@
-# Store text files with LF line endings (what Lovable and Prettier expect).
+# Store text files with LF line endings (what Prettier expects).
 * text=auto eol=lf
