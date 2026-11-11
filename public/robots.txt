@@ -1,14 +1,13 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# Search engines may visit every shop page. Private pages (cart, checkout,
+# account, sign-in, wishlist, admin) also carry a "noindex" tag of their own.
 User-agent: *
 Allow: /
+Disallow: /cart
+Disallow: /checkout
+Disallow: /account
+Disallow: /login
+Disallow: /wishlist
+Disallow: /search
+Disallow: /manage/
+
+Sitemap: https://www.cakestories.in/sitemap.xml

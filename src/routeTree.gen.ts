@@ -15,6 +15,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as BirthdayCakeSlugRouteImport } from './routes/birthday-cake.$slug'
 import { Route as CategoryCategorySlugRouteImport } from './routes/category.$categorySlug'
@@ -54,6 +55,11 @@ const LoginRoute = LoginRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WishlistRoute = WishlistRouteImport.update({
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/search': typeof SearchRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/wishlist': typeof WishlistRoute
   '/birthday-cake/$slug': typeof BirthdayCakeSlugRoute
   '/category/$categorySlug': typeof CategoryCategorySlugRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/search': typeof SearchRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/wishlist': typeof WishlistRoute
   '/birthday-cake/$slug': typeof BirthdayCakeSlugRoute
   '/category/$categorySlug': typeof CategoryCategorySlugRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/search': typeof SearchRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/wishlist': typeof WishlistRoute
   '/birthday-cake/$slug': typeof BirthdayCakeSlugRoute
   '/category/$categorySlug': typeof CategoryCategorySlugRoute
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/search'
+    | '/sitemap.xml'
     | '/wishlist'
     | '/birthday-cake/$slug'
     | '/category/$categorySlug'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/search'
+    | '/sitemap.xml'
     | '/wishlist'
     | '/birthday-cake/$slug'
     | '/category/$categorySlug'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/search'
+    | '/sitemap.xml'
     | '/wishlist'
     | '/birthday-cake/$slug'
     | '/category/$categorySlug'
@@ -226,6 +238,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
   SearchRoute: typeof SearchRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WishlistRoute: typeof WishlistRoute
   BirthdayCakeSlugRoute: typeof BirthdayCakeSlugRoute
   CategoryCategorySlugRoute: typeof CategoryCategorySlugRoute
@@ -280,6 +293,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/wishlist': {
@@ -362,6 +382,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
   SearchRoute: SearchRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   WishlistRoute: WishlistRoute,
   BirthdayCakeSlugRoute: BirthdayCakeSlugRoute,
   CategoryCategorySlugRoute: CategoryCategorySlugRoute,
