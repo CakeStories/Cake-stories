@@ -29,6 +29,7 @@ import {
   adminAddVariant,
   adminCheckConfig,
   adminCheckOrderPayment,
+  adminPaymentStatus,
   adminListOrders,
   adminUpdateOrderStatus,
   ORDER_STATUSES,
@@ -71,6 +72,7 @@ import {
   type AdminProduct,
   type AdminStoreSettings,
 } from "@/lib/admin.server";
+import type { PaymentStatus } from "@/lib/payments.server";
 
 export const Route = createFileRoute("/manage/$secret")({
   // The real gate: this secret path segment is checked against
@@ -624,6 +626,30 @@ function formatDate(isoDate: string) {
   });
 }
 
+/** One line above the orders: are online payments working, and in which Razorpay mode? */
+function PaymentStatusLine({ token }: { token: string }) {
+  const [status, setStatus] = useState<PaymentStatus | null>(null);
+  useEffect(() => {
+    adminPaymentStatus({ data: { token } }).then(setStatus, () => setStatus(null));
+  }, [token]);
+  if (!status) return null;
+
+  const mode =
+    status.state !== "missing" && status.mode === "live"
+      ? "Live mode — real payments"
+      : status.state !== "missing" && status.mode === "test"
+        ? "Test mode — no real money moves"
+        : "unknown key type";
+  const [tone, text] =
+    status.state === "ok"
+      ? [status.mode === "live" ? "border-success/40 bg-success/10" : "border-amber-400/50 bg-amber-50", `Payments connected · ${mode} · key …${status.keyEnding}`]
+      : status.state === "missing"
+        ? ["border-destructive/40 bg-destructive/10", "Payments not set up — add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Vercel, then redeploy."]
+        : ["border-destructive/40 bg-destructive/10", `Payments not working (${mode}, key …${status.keyEnding}): ${status.detail ?? "Razorpay didn't answer."}`];
+
+  return <p className={`mb-4 rounded-md border px-3 py-2 text-xs font-medium ${tone}`}>{text}</p>;
+}
+
 function OrdersPanel({ token, onAuthError }: { token: string; onAuthError: () => void }) {
   const [payment, setPayment] = useState<"paid" | "pending" | "all">("paid");
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -653,6 +679,7 @@ function OrdersPanel({ token, onAuthError }: { token: string; onAuthError: () =>
 
   return (
     <div className="mt-6">
+      <PaymentStatusLine token={token} />
       <div className="flex flex-wrap items-center gap-2">
         {(
           [

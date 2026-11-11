@@ -11,7 +11,7 @@ async function adminRest<T>(...args: Parameters<typeof serviceRest>): Promise<T>
   if ((args[1]?.method ?? "GET") !== "GET") clearReadCache();
   return result;
 }
-import { findSuccessfulPayment, markOrderPaid } from "@/lib/payments.server";
+import { checkRazorpayKeys, findSuccessfulPayment, markOrderPaid } from "@/lib/payments.server";
 
 /**
  * Server-only admin data layer.
@@ -164,6 +164,14 @@ export const adminCheckConfig = createServerFn({ method: "POST" })
       RAZORPAY_KEY_ID: Boolean(serverEnv("RAZORPAY_KEY_ID")),
       RAZORPAY_KEY_SECRET: Boolean(serverEnv("RAZORPAY_KEY_SECRET")),
     };
+  });
+
+/** Whether online payments are set up and which Razorpay mode they're in (Orders tab). */
+export const adminPaymentStatus = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ token: z.string() }).parse(data))
+  .handler(async ({ data }) => {
+    await assertValidToken(data.token);
+    return checkRazorpayKeys();
   });
 
 /* -------------------------------------------------------------- orders --- */

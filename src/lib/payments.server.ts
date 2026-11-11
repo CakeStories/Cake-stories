@@ -34,6 +34,37 @@ async function razorpayApi<T>(
   return (await response.json()) as T;
 }
 
+export type PaymentStatus =
+  | { state: "missing" }
+  | { state: "ok" | "rejected" | "error"; mode: "live" | "test" | "unknown"; keyEnding: string; detail?: string };
+
+/**
+ * Whether the server's Razorpay keys work, for the admin panel — asks Razorpay
+ * for one order (read-only). Never returns the keys themselves.
+ */
+export async function checkRazorpayKeys(): Promise<PaymentStatus> {
+  const keyId = serverEnv("RAZORPAY_KEY_ID");
+  const keySecret = serverEnv("RAZORPAY_KEY_SECRET");
+  if (!keyId || !keySecret) return { state: "missing" };
+  const mode = keyId.startsWith("rzp_live_") ? "live" : keyId.startsWith("rzp_test_") ? "test" : "unknown";
+  const keyEnding = keyId.slice(-4);
+  try {
+    await razorpayApi("orders?count=1");
+    return { state: "ok", mode, keyEnding };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const rejected = /\((401|403)\)/.test(message);
+    return {
+      state: rejected ? "rejected" : "error",
+      mode,
+      keyEnding,
+      detail: rejected
+        ? "Razorpay refused these keys — the Key ID and Key Secret don't belong together (e.g. a live ID with a test secret)."
+        : message.slice(0, 200),
+    };
+  }
+}
+
 export async function createRazorpayOrder(
   amountInPaise: number,
   receipt: string,

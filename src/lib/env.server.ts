@@ -70,8 +70,10 @@ function loadFileEnv(): Record<string, string> {
 
 /** Read a server-side environment variable, or `undefined` if unset. */
 export function serverEnv(key: string): string | undefined {
-  const fromProcess = process.env?.[key];
-  if (fromProcess !== undefined && fromProcess !== "") return fromProcess.trim();
+  // Host settings (e.g. Vercel) get the same clean-up as .env: no stray spaces
+  // or surrounding quotes from a copy-paste.
+  const fromProcess = process.env?.[key] && parseEnvFile(`${key}=${process.env[key]}`)[key];
+  if (fromProcess) return fromProcess;
 
   const fromFile = loadFileEnv()[key];
   if (fromFile !== undefined && fromFile !== "") return fromFile;
