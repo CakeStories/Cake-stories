@@ -10,6 +10,7 @@ import {
   ImageUp,
   Loader2,
   LogOut,
+  Mail,
   Megaphone,
   Pencil,
   PackageCheck,
@@ -30,6 +31,8 @@ import {
   adminCheckConfig,
   adminCheckOrderPayment,
   adminPaymentStatus,
+  adminOrderEmailStatus,
+  adminSendTestOrderEmail,
   adminListOrders,
   adminUpdateOrderStatus,
   ORDER_STATUSES,
@@ -650,6 +653,55 @@ function PaymentStatusLine({ token }: { token: string }) {
   return <p className={`mb-4 rounded-md border px-3 py-2 text-xs font-medium ${tone}`}>{text}</p>;
 }
 
+/** Whether order emails are on, where shop alerts go, and a button to send a test alert. */
+function OrderEmailStatusLine({ token }: { token: string }) {
+  const [status, setStatus] = useState<{ configured: boolean; from: string; alertEmails: string[] } | null>(null);
+  const [testState, setTestState] = useState<string | null>(null);
+  useEffect(() => {
+    adminOrderEmailStatus({ data: { token } }).then(setStatus, () => setStatus(null));
+  }, [token]);
+  if (!status) return null;
+
+  const sendTest = async () => {
+    setTestState("Sending…");
+    try {
+      const result = await adminSendTestOrderEmail({ data: { token } });
+      setTestState(
+        `Test sent to ${result.to.join(", ")} (${result.usedRealOrder ? "using the latest paid order" : "with sample order details"}). Check the inbox and spam folder.`,
+      );
+    } catch (err) {
+      setTestState(err instanceof Error ? err.message : "Couldn't send the test email.");
+    }
+  };
+
+  if (!status.configured) {
+    return (
+      <p className="-mt-2 mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
+        Order emails are off. To email customers a confirmation and the shop a new-order alert, add RESEND_API_KEY and
+        ORDER_ALERT_EMAILS in Vercel, then redeploy.
+      </p>
+    );
+  }
+  return (
+    <div className="-mt-2 mb-4 rounded-md border border-success/40 bg-success/10 px-3 py-2 text-xs">
+      <p className="font-medium">
+        Order emails on · customers get a confirmation from {status.from}
+        {status.alertEmails.length > 0
+          ? ` · new-order alerts go to ${status.alertEmails.join(", ")}`
+          : " · no shop alert address yet (set ORDER_ALERT_EMAILS in Vercel)"}
+      </p>
+      {status.alertEmails.length > 0 && (
+        <p className="mt-1.5 flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="secondary" disabled={testState === "Sending…"} onClick={() => void sendTest()}>
+            <Mail size={13} /> Send a test alert
+          </Button>
+          {testState && <span className="text-muted-foreground">{testState}</span>}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function OrdersPanel({ token, onAuthError }: { token: string; onAuthError: () => void }) {
   const [payment, setPayment] = useState<"paid" | "pending" | "all">("paid");
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -680,6 +732,7 @@ function OrdersPanel({ token, onAuthError }: { token: string; onAuthError: () =>
   return (
     <div className="mt-6">
       <PaymentStatusLine token={token} />
+      <OrderEmailStatusLine token={token} />
       <div className="flex flex-wrap items-center gap-2">
         {(
           [

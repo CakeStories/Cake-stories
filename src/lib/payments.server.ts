@@ -1,5 +1,6 @@
 import { serverEnv } from "@/lib/env.server";
 import { serviceRest } from "@/lib/service.server";
+import { sendOrderEmails } from "@/lib/order-emails.server";
 
 /**
  * Server-only Razorpay helpers. RAZORPAY_KEY_SECRET is used here and nowhere
@@ -141,6 +142,9 @@ export async function markOrderPaid(
       body: { p_code: order.coupon_code },
     }).catch((err) => console.error("Couldn't count coupon use:", err));
   }
+
+  // Only the call that actually marked it paid sends the emails, so each order emails once.
+  if (updated.length > 0) await sendOrderEmails(order.id);
 
   return { orderId: order.id };
 }

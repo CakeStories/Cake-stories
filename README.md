@@ -29,6 +29,7 @@ are visible to visitors' browsers; everything else must stay secret.
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `VITE_RAZORPAY_KEY_ID` | Online payments |
 | `ADMIN_URL_TOKEN` | The secret part of the admin panel address: `/manage/<token>` |
 | `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` | Admin panel sign-in |
+| `RESEND_API_KEY`, `ORDER_EMAIL_FROM`, `ORDER_ALERT_EMAILS` | Order emails: a confirmation to the customer and a new-order alert to the shop (Resend) |
 | `GOOGLE_PLACE_ID`, `GOOGLE_PLACES_API_KEY` | Optional — shows Google reviews on the homepage |
 
 ## Managing the store

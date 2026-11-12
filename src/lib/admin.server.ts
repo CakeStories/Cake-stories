@@ -12,6 +12,7 @@ async function adminRest<T>(...args: Parameters<typeof serviceRest>): Promise<T>
   return result;
 }
 import { checkRazorpayKeys, findSuccessfulPayment, markOrderPaid } from "@/lib/payments.server";
+import { orderAlertEmails, orderEmailFrom, orderEmailsConfigured, sendTestShopEmail } from "@/lib/order-emails.server";
 
 /**
  * Server-only admin data layer.
@@ -172,6 +173,25 @@ export const adminPaymentStatus = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertValidToken(data.token);
     return checkRazorpayKeys();
+  });
+
+/** Order-email setup for the Orders tab: on/off, sender and alert addresses (never the API key). */
+export const adminOrderEmailStatus = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ token: z.string() }).parse(data))
+  .handler(async ({ data }) => {
+    await assertValidToken(data.token);
+    return { configured: orderEmailsConfigured(), from: orderEmailFrom(), alertEmails: orderAlertEmails() };
+  });
+
+/** Sends a [TEST] new-order alert (latest paid order, or a sample) to the alert addresses. */
+export const adminSendTestOrderEmail = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ token: z.string() }).parse(data))
+  .handler(async ({ data }) => {
+    await assertValidToken(data.token);
+    const to = orderAlertEmails();
+    if (to.length === 0) throw new Error("Add ORDER_ALERT_EMAILS in Vercel first, then redeploy.");
+    const result = await sendTestShopEmail(to);
+    return { ...result, to };
   });
 
 /* -------------------------------------------------------------- orders --- */
