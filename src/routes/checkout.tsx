@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, MapPin, ShieldCheck, Tag } from "lucide-react";
+import { CheckCircle2, Loader2, MapPin, Minus, Plus, ShieldCheck, Tag, Trash2 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/button";
@@ -74,7 +74,7 @@ function formatRupees(amount: number): string {
 }
 
 function CheckoutPage() {
-  const { items, subtotal: localSubtotal, clear, applyPrices } = useCart();
+  const { items, subtotal: localSubtotal, clear, applyPrices, setQuantity, removeItem } = useCart();
   const { user, getAccessToken } = useAuth();
   // Wording inside input hints and dropdowns (which can't hold editable text) is read from here.
   const { content } = useEditMode();
@@ -750,9 +750,39 @@ function CheckoutPage() {
                     {item.variant && (
                       <p className="text-xs text-muted-foreground">{item.variant}</p>
                     )}
-                    <p className="text-xs text-muted-foreground">
-                      <EditableText id="checkout.qty">Qty</EditableText> {item.quantity}
-                    </p>
+                    {/* Quantities can be changed (or items removed) right here; the total re-checks itself. Locked while paying. */}
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="flex items-center rounded-md border border-input">
+                        <button
+                          type="button"
+                          aria-label={`Decrease quantity of ${item.name}`}
+                          disabled={status === "processing" || item.quantity <= 1}
+                          onClick={() => setQuantity(item.id, item.quantity - 1)}
+                          className="grid size-7 place-items-center hover:bg-muted disabled:opacity-40"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <span className="w-6 text-center text-xs font-semibold">{item.quantity}</span>
+                        <button
+                          type="button"
+                          aria-label={`Increase quantity of ${item.name}`}
+                          disabled={status === "processing" || item.quantity >= 50}
+                          onClick={() => setQuantity(item.id, Math.min(50, item.quantity + 1))}
+                          className="grid size-7 place-items-center hover:bg-muted disabled:opacity-40"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${item.name}`}
+                        disabled={status === "processing"}
+                        onClick={() => removeItem(item.id)}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive disabled:opacity-40"
+                      >
+                        <Trash2 size={13} /> <EditableText id="checkout.remove">Remove</EditableText>
+                      </button>
+                    </div>
                     {item.note && (
                       <p className="text-xs italic text-muted-foreground">"{item.note}"</p>
                     )}

@@ -31,6 +31,7 @@ import {
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
 import { EditableImage, EditableText, EditableValue } from "@/components/editable";
+import { AnnouncementTicker } from "@/components/announcement-ticker";
 import { useEditMode, useSiteText } from "@/lib/edit-mode";
 import { resizedImageUrl } from "@/lib/supabase";
 import { CATEGORY_ICONS } from "@/lib/category-icons";
@@ -350,7 +351,7 @@ export function SiteHeader({
   const { count: wishlistCount } = useWishlist();
   const { user } = useAuth();
   const settings = useStoreSettings();
-  const { saveStoreSettings, saveCategory } = useEditMode();
+  const { saveStoreSettings, saveCategory, editing } = useEditMode();
   const searchHint = useSiteText("header.search.placeholder", "Search for cakes, flavours and occasions");
   const mobileSearchHint = useSiteText("header.search.placeholderMobile", "Search cakes");
   // Categories come from the database now (so the shop owner can rename or
@@ -385,19 +386,22 @@ export function SiteHeader({
   return (
     <>
       {settings.announcementActive && (
-        <div className="bg-primary px-4 py-2 text-center text-xs font-semibold text-primary-foreground sm:text-sm">
-          <EditableText onSave={(announcementText) => saveStoreSettings({ announcementText })}>
-            {settings.announcementText}
-          </EditableText>
-          {settings.announcementCouponCode && (
-            <>
-              {" "}
-              · <EditableText id="header.announcement.useCode">Use code</EditableText>{" "}
-              <span className="rounded bg-primary-foreground/20 px-1.5 py-0.5 font-bold tracking-wide">
-                {settings.announcementCouponCode}
-              </span>
-            </>
-          )}
+        <div className="bg-primary py-2 text-xs font-semibold text-primary-foreground sm:text-sm">
+          {/* Stands still while editing, so the text can be clicked and typed over. */}
+          <AnnouncementTicker still={editing}>
+            <EditableText onSave={(announcementText) => saveStoreSettings({ announcementText })}>
+              {settings.announcementText}
+            </EditableText>
+            {settings.announcementCouponCode && (
+              <>
+                {" "}
+                · <EditableText id="header.announcement.useCode">Use code</EditableText>{" "}
+                <span className="rounded bg-primary-foreground/20 px-1.5 py-0.5 font-bold tracking-wide">
+                  {settings.announcementCouponCode}
+                </span>
+              </>
+            )}
+          </AnnouncementTicker>
         </div>
       )}
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">

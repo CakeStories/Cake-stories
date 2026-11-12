@@ -178,6 +178,28 @@
   }
 }
 
+/* The announcement strip glides left to right; see components/announcement-ticker.tsx. */
+@keyframes announcement-ltr {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+.announcement-ticker {
+  animation: announcement-ltr linear infinite;
+  will-change: transform;
+}
+.announcement-ticker:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .announcement-ticker {
+    animation: none;
+  }
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
