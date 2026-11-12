@@ -1,6 +1,7 @@
 import { serverEnv } from "@/lib/env.server";
 import { serviceRest } from "@/lib/service.server";
 import { fetchSiteContent } from "@/lib/site-content";
+import { DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
 
 /**
  * Order emails, sent through Resend (resend.com) once an order is paid:
@@ -391,7 +392,7 @@ export async function sendOrderEmails(orderId: string): Promise<void> {
     const shopTo = orderAlertEmails();
     const contact = {
       phone: content["contact.phone"] ?? DEFAULT_PHONE,
-      whatsapp: content["contact.whatsapp"] ?? DEFAULT_PHONE,
+      whatsapp: content["contact.whatsapp"] ?? DEFAULT_WHATSAPP_NUMBER,
     };
     const jobs: Promise<void>[] = [];
     if (data.order.customer_email) {

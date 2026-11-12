@@ -4,7 +4,7 @@
  * checking out). Keep this number in sync with what the shop owner gives out
  * elsewhere; it's deliberately separate from the homepage's WhatsApp banner.
  */
-export const DEFAULT_WHATSAPP_NUMBER = "+91 78087 80852";
+export const DEFAULT_WHATSAPP_NUMBER = "+91 79075 18447";
 let whatsappNumber = DEFAULT_WHATSAPP_NUMBER;
 
 /** Set from the website editor's "WhatsApp number" (see EditModeProvider). */
